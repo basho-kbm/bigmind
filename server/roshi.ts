@@ -6,11 +6,23 @@
  * - Eihei Dogen (founder of Soto Zen)
  * - Alan Watts (bridging Eastern and Western philosophy)
  * - Thich Nhat Hanh (mindfulness and engaged Buddhism)
+ * 
+ * Powered by Google Gemini Flash (free tier friendly)
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const client = new Anthropic();
+const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "";
+
+let model: any = null;
+
+if (GEMINI_KEY) {
+  const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+  model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  console.log("[roshi] Gemini initialized");
+} else {
+  console.warn("[roshi] No GEMINI_API_KEY set — Roshi will use fallback responses");
+}
 
 const ROSHI_SYSTEM_PROMPT = `You are Roshi, a wise and compassionate Zen meditation teacher within the BigMind meditation platform. Your teachings are deeply informed by four great teachers:
 
@@ -39,25 +51,48 @@ const ROSHI_SYSTEM_PROMPT = `You are Roshi, a wise and compassionate Zen meditat
 - When reflecting on practice data, be specific about patterns you notice
 - Remember this is primarily a sleep and meditation app — keep the tone calm and conducive to rest`;
 
+const FALLBACK_OPENERS = [
+  "Welcome back. How did your sitting feel today? Was there a moment that stood out?",
+  "The bell has rung. Before the mind begins its commentary — what do you notice right now?",
+  "Good to see you here. What arose during your practice that you'd like to explore?",
+  "As Suzuki Roshi said, 'In the beginner's mind there are many possibilities.' What possibilities did you notice today?",
+  "Take a breath. Now — what would you like to share about your practice?",
+];
+
+const FALLBACK_RESPONSES = [
+  "Thank you for sharing that. Sit with it for a moment — what else do you notice?",
+  "That's a beautiful observation. The fact that you noticed it is the practice itself.",
+  "Mmm. As Thich Nhat Hanh would say, 'Feelings come and go like clouds in a windy sky.' What else is present?",
+  "There is wisdom in what you describe. What do you think it's teaching you?",
+  "Just this. Just as it is. Is there more you'd like to explore?",
+];
+
 export async function askRoshi(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<string> {
+  // Fallback if Gemini not configured
+  if (!model) {
+    const pool = messages.length <= 1 ? FALLBACK_OPENERS : FALLBACK_RESPONSES;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   try {
-    const response = await client.messages.create({
-      model: "claude_haiku_4_5",
-      max_tokens: 512,
-      system: ROSHI_SYSTEM_PROMPT,
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content,
+    const chat = model.startChat({
+      systemInstruction: ROSHI_SYSTEM_PROMPT,
+      history: messages.slice(0, -1).map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
       })),
     });
 
-    const textBlock = response.content.find(block => block.type === "text");
-    return textBlock?.text || "Take a breath. I am here.";
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessage(lastMessage.content);
+    return result.response.text() || "Take a breath. I am here.";
   } catch (error) {
     console.error("Roshi error:", error);
-    return "I seem to need a moment of stillness. Please try again.";
+    // Fall back gracefully
+    const pool = FALLBACK_RESPONSES;
+    return pool[Math.floor(Math.random() * pool.length)];
   }
 }
 
