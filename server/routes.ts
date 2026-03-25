@@ -1,7 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import { askRoshi, generateDiaryOpener, generateInsight } from "./roshi";
+import { generateAudioLibrary, generateSingleAudio } from "./audio-gen";
 
 function getVisitorId(req: any): string {
   return req.headers["x-visitor-id"] || "local-dev";
@@ -11,6 +14,140 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // ============ Audio Library ============
+
+  // Serve audio files statically
+  const audioDir = path.resolve(process.cwd(), "public/audio");
+  app.use("/api/audio/files", (req, res, next) => {
+    const filePath = path.join(audioDir, req.path);
+    if (fs.existsSync(filePath) && filePath.endsWith(".mp3")) {
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      fs.createReadStream(filePath).pipe(res);
+    } else {
+      res.status(404).json({ error: "Audio not found" });
+    }
+  });
+
+  // Get audio manifest — lists available pre-generated audio
+  app.get("/api/audio/manifest", async (_req, res) => {
+    try {
+      const manifestPath = path.join(audioDir, "manifest.json");
+      if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+        res.json(manifest);
+      } else {
+        res.json({ entries: [], lastGenerated: null });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load audio manifest" });
+    }
+  });
+
+  // Get audio for a specific meditation type + duration + voice
+  app.get("/api/audio/find", async (req, res) => {
+    try {
+      const { type, duration, voice } = req.query;
+      const manifestPath = path.join(audioDir, "manifest.json");
+
+      if (!fs.existsSync(manifestPath)) {
+        return res.json({ found: false });
+      }
+
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+      const entry = manifest.entries.find((e: any) =>
+        e.meditationType === type &&
+        e.duration === parseInt(duration as string) &&
+        e.voiceId === voice
+      );
+
+      if (entry) {
+        res.json({
+          found: true,
+          audioUrl: `/api/audio/files/${entry.filename}`,
+          script: entry.script,
+          generatedAt: entry.generatedAt,
+        });
+      } else {
+        // Try to find any audio for this type/duration (different voice is OK)
+        const fallback = manifest.entries.find((e: any) =>
+          e.meditationType === type &&
+          e.duration === parseInt(duration as string)
+        );
+        if (fallback) {
+          res.json({
+            found: true,
+            audioUrl: `/api/audio/files/${fallback.filename}`,
+            script: fallback.script,
+            generatedAt: fallback.generatedAt,
+            voiceSubstituted: true,
+          });
+        } else {
+          // Find closest duration
+          const sameType = manifest.entries
+            .filter((e: any) => e.meditationType === type)
+            .sort((a: any, b: any) =>
+              Math.abs(a.duration - parseInt(duration as string)) -
+              Math.abs(b.duration - parseInt(duration as string))
+            );
+          if (sameType.length > 0) {
+            res.json({
+              found: true,
+              audioUrl: `/api/audio/files/${sameType[0].filename}`,
+              script: sameType[0].script,
+              generatedAt: sameType[0].generatedAt,
+              durationSubstituted: true,
+            });
+          } else {
+            res.json({ found: false });
+          }
+        }
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to find audio" });
+    }
+  });
+
+  // Admin route to trigger audio generation
+  app.post("/api/audio/generate", async (_req, res) => {
+    try {
+      const logs: string[] = [];
+      const log = (msg: string) => {
+        logs.push(msg);
+        console.log(`[audio-gen] ${msg}`);
+      };
+
+      // Run async — respond immediately
+      res.json({ status: "started", message: "Audio generation started in background" });
+
+      // Generate in background
+      generateAudioLibrary(log).then(result => {
+        console.log(`[audio-gen] Complete: ${result.generated} generated, ${result.total} total`);
+      }).catch(err => {
+        console.error(`[audio-gen] Error:`, err);
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to start audio generation" });
+    }
+  });
+
+  // Generate a single audio file on demand
+  app.post("/api/audio/generate-single", async (req, res) => {
+    try {
+      const { meditationType, duration, voice } = req.body;
+      const log = (msg: string) => console.log(`[audio-gen] ${msg}`);
+      const entry = await generateSingleAudio(meditationType, duration, voice, log);
+      if (entry) {
+        res.json({ success: true, entry });
+      } else {
+        res.status(500).json({ error: "Failed to generate audio" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // ============ Sleep Sessions ============
 

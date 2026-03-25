@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, getApiBase } from "@/lib/queryClient";
 import { MEDITATION_TYPES, VOICE_OPTIONS, DURATION_OPTIONS } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,10 @@ export default function SleepPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioAvailable, setAudioAvailable] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const selectedTypeInfo = MEDITATION_TYPES.find(t => t.id === selectedType);
   const isSoundType = selectedTypeInfo?.category === "sounds";
@@ -90,19 +93,75 @@ export default function SleepPage() {
     setView("configure");
   };
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
     setView("playing");
     setElapsed(0);
     setIsPlaying(true);
     startSession.mutate();
+
+    // Try to load pre-generated audio
+    setAudioLoading(true);
+    try {
+      const res = await apiRequest(
+        "GET",
+        `/api/audio/find?type=${selectedType}&duration=${selectedDuration}&voice=${selectedVoice}`
+      );
+      const data = await res.json();
+      if (data.found && data.audioUrl) {
+        const audioUrl = `${getApiBase()}${data.audioUrl}`;
+        const audio = new Audio(audioUrl);
+        audio.volume = volume / 100;
+        audio.loop = true; // Loop for ambient sounds
+        audioRef.current = audio;
+        await audio.play();
+        setAudioAvailable(true);
+      }
+    } catch (err) {
+      console.log("No pre-generated audio available");
+    }
+    setAudioLoading(false);
   };
 
   const handleStop = () => {
     setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    setAudioAvailable(false);
     setView("select");
     setElapsed(0);
     setSelectedType(null);
   };
+
+  // Sync audio play/pause with player state
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {});
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
+
+  // Sync volume/mute
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    }
+  }, [volume, isMuted]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);

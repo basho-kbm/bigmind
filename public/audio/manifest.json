@@ -1,0 +1,45 @@
+{
+  "entries": [
+    {
+      "meditationType": "beginners-mind",
+      "duration": 5,
+      "voiceId": "kore",
+      "script": "",
+      "filename": "beginners-mind_5min_kore.mp3",
+      "fileSize": 4408890,
+      "generatedAt": "2026-03-25T18:15:20.201202",
+      "expiresAt": "2026-03-26T18:15:20.201214"
+    },
+    {
+      "meditationType": "body-scan",
+      "duration": 5,
+      "voiceId": "kore",
+      "script": "",
+      "filename": "body-scan_5min_kore.mp3",
+      "fileSize": 15329850,
+      "generatedAt": "2026-03-25T18:15:20.201232",
+      "expiresAt": "2026-03-26T18:15:20.201234"
+    },
+    {
+      "meditationType": "ocean-sounds",
+      "duration": 5,
+      "voiceId": "aoede",
+      "script": "",
+      "filename": "ocean-sounds_5min_aoede.mp3",
+      "fileSize": 1478970,
+      "generatedAt": "2026-03-25T18:15:20.201242",
+      "expiresAt": "2026-03-26T18:15:20.201243"
+    },
+    {
+      "meditationType": "open-awareness",
+      "duration": 5,
+      "voiceId": "charon",
+      "script": "",
+      "filename": "open-awareness_5min_charon.mp3",
+      "fileSize": 9713850,
+      "generatedAt": "2026-03-25T18:15:20.201249",
+      "expiresAt": "2026-03-26T18:15:20.201250"
+    }
+  ],
+  "lastGenerated": "2026-03-25T18:15:20.201253"
+}
