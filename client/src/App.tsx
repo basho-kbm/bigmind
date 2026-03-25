@@ -1,4 +1,4 @@
-import { Switch, Route, Router, Redirect } from "wouter";
+import { Switch, Route, Router, Redirect, useLocation } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import RegisterPage from "@/pages/register";
 import AccountPage from "@/pages/account";
 import PricingPage from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
+import LandingPage from "@/pages/landing";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType<any> }) {
   const { isAuthenticated, isLoading, isTrialing, hasActiveSubscription } = useAuth();
@@ -77,14 +78,33 @@ function AuthRequiredRoute({ component: Component }: { component: React.Componen
   return <Component />;
 }
 
+function RootRoute() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LandingPage />;
+  }
+
+  return <ProtectedRoute component={SleepPage} />;
+}
+
 function AppRouter() {
   return (
     <Switch>
+      <Route path="/landing" component={LandingPage} />
       <Route path="/login">{() => <AuthRoute component={LoginPage} />}</Route>
       <Route path="/register">{() => <AuthRoute component={RegisterPage} />}</Route>
       <Route path="/pricing" component={PricingPage} />
       <Route path="/account">{() => <AuthRequiredRoute component={AccountPage} />}</Route>
-      <Route path="/">{() => <ProtectedRoute component={SleepPage} />}</Route>
+      <Route path="/">{() => <RootRoute />}</Route>
       <Route path="/diary">{() => <ProtectedRoute component={DiaryPage} />}</Route>
       <Route path="/diary/:id">{() => <ProtectedRoute component={DiaryPage} />}</Route>
       <Route path="/insights">{() => <ProtectedRoute component={InsightsPage} />}</Route>
@@ -96,9 +116,12 @@ function AppRouter() {
 
 function AppLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
 
-  // For auth pages (login/register), don't show sidebar
-  if (!isAuthenticated && !isLoading) {
+  const isLandingPage = location === "/landing";
+
+  // For auth pages (login/register), landing page, or unauthenticated users — no sidebar
+  if (isLandingPage || (!isAuthenticated && !isLoading)) {
     return (
       <main className="h-screen w-full overflow-auto">
         <AppRouter />
