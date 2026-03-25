@@ -4,12 +4,20 @@ import {
   type DiaryEntry, type InsertDiaryEntry, diaryEntries,
   type AudioLibraryItem, type InsertAudioLibraryItem, audioLibrary,
   type Visitor, visitors,
+  type User, type InsertUser, users,
+  type Subscription, type InsertSubscription, subscriptions,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
-import { eq, and, desc, gte } from "drizzle-orm";
+import { eq, and, desc, gte, sql } from "drizzle-orm";
 
-const sqlite = new Database("data.db");
+import path from "path";
+import fs from "fs";
+
+// Use persistent disk mount on Render, local file in dev
+const DATA_DIR = fs.existsSync("/app/data") ? "/app/data" : ".";
+const DB_PATH = path.join(DATA_DIR, "data.db");
+const sqlite = new Database(DB_PATH);
 sqlite.pragma("journal_mode = WAL");
 
 export const db = drizzle(sqlite);
@@ -17,6 +25,18 @@ export const db = drizzle(sqlite);
 export interface IStorage {
   // Visitors
   getOrCreateVisitor(visitorId: string): Promise<Visitor>;
+
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  updateUserStripeCustomerId(userId: number, stripeCustomerId: string): Promise<void>;
+
+  // Subscriptions
+  createSubscription(sub: InsertSubscription): Promise<Subscription>;
+  getSubscriptionByUserId(userId: number): Promise<Subscription | undefined>;
+  getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | undefined>;
+  updateSubscription(stripeSubscriptionId: string, data: Partial<Subscription>): Promise<Subscription | undefined>;
 
   // Sleep sessions
   createSleepSession(session: InsertSleepSession): Promise<SleepSession>;
@@ -40,7 +60,78 @@ export interface IStorage {
   getAllAudioItems(): Promise<AudioLibraryItem[]>;
 }
 
+export function runMigrations() {
+  db.run(sql`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT,
+    stripe_customer_id TEXT,
+    trial_ends_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    stripe_subscription_id TEXT NOT NULL UNIQUE,
+    stripe_price_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    current_period_start TEXT,
+    current_period_end TEXT,
+    cancel_at_period_end INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+}
+
 export class DatabaseStorage implements IStorage {
+  // === Users ===
+  async createUser(user: InsertUser): Promise<User> {
+    return db.insert(users).values(user).returning().get();
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return db.select().from(users).where(eq(users.email, email)).get();
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    return db.select().from(users).where(eq(users.id, id)).get();
+  }
+
+  async updateUserStripeCustomerId(userId: number, stripeCustomerId: string): Promise<void> {
+    db.update(users).set({ stripeCustomerId }).where(eq(users.id, userId)).run();
+  }
+
+  // === Subscriptions ===
+  async createSubscription(sub: InsertSubscription): Promise<Subscription> {
+    return db.insert(subscriptions).values(sub).returning().get();
+  }
+
+  async getSubscriptionByUserId(userId: number): Promise<Subscription | undefined> {
+    return db.select().from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.id))
+      .get();
+  }
+
+  async getSubscriptionByStripeId(stripeSubscriptionId: string): Promise<Subscription | undefined> {
+    return db.select().from(subscriptions)
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId))
+      .get();
+  }
+
+  async updateSubscription(stripeSubscriptionId: string, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    const updateData: any = { ...data, updatedAt: new Date().toISOString() };
+    delete updateData.id;
+    delete updateData.stripeSubscriptionId;
+    db.update(subscriptions).set(updateData)
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).run();
+    return db.select().from(subscriptions)
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId)).get();
+  }
+
+  // === Visitors ===
   async getOrCreateVisitor(visitorId: string): Promise<Visitor> {
     const existing = db.select().from(visitors).where(eq(visitors.visitorId, visitorId)).get();
     if (existing) return existing;

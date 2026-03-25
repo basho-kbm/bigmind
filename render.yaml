@@ -1,0 +1,28 @@
+# render.yaml — Render Blueprint for BigMind
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: bigmind
+    runtime: docker
+    plan: starter # $7/mo — persistent, no sleep
+    healthCheckPath: /api/audio/manifest
+    disk:
+      name: bigmind-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false # set manually in Render dashboard
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        value: price_1T1qn9CEc8DYdaCCXi79W9XK
+      - key: STRIPE_PRICE_ANNUAL
+        value: price_1TExqxCEc8DYdaCCEIjIvpjX

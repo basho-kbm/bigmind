@@ -2,6 +2,31 @@ import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Users — email/password auth
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  displayName: text("display_name"),
+  stripeCustomerId: text("stripe_customer_id"),
+  trialEndsAt: text("trial_ends_at").notNull(),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+// Subscriptions — synced from Stripe webhooks
+export const subscriptions = sqliteTable("subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+  stripePriceId: text("stripe_price_id").notNull(),
+  status: text("status").notNull(),
+  currentPeriodStart: text("current_period_start"),
+  currentPeriodEnd: text("current_period_end"),
+  cancelAtPeriodEnd: integer("cancel_at_period_end", { mode: "boolean" }).default(false),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 // Visitors identified by X-Visitor-Id header (no auth in Phase One)
 export const visitors = sqliteTable("visitors", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -54,12 +79,18 @@ export const audioLibrary = sqliteTable("audio_library", {
 });
 
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSleepSessionSchema = createInsertSchema(sleepSessions).omit({ id: true });
 export const insertTimerSessionSchema = createInsertSchema(timerSessions).omit({ id: true });
 export const insertDiaryEntrySchema = createInsertSchema(diaryEntries).omit({ id: true });
 export const insertAudioLibrarySchema = createInsertSchema(audioLibrary).omit({ id: true });
 
 // Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type SleepSession = typeof sleepSessions.$inferSelect;
 export type InsertSleepSession = z.infer<typeof insertSleepSessionSchema>;
 export type TimerSession = typeof timerSessions.$inferSelect;
