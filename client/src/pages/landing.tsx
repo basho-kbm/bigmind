@@ -213,7 +213,7 @@ export default function LandingPage() {
               {
                 icon: BookHeart,
                 title: "Roshi AI",
-                desc: "Your personal Zen teacher, informed by Suzuki, Dogen, Watts, and Thich Nhat Hanh. Reflect on your practice through guided conversation.",
+                desc: "Your personal Zen teacher, informed by the great masters. Reflect on your practice through guided conversation.",
               },
               {
                 icon: BarChart3,
@@ -297,9 +297,9 @@ export default function LandingPage() {
       <Section id="wisdom" className="py-24 md:py-32 px-6">
         <div className="max-w-5xl mx-auto">
           <motion.div variants={fadeUp} className="text-center mb-16">
-            <p className="text-primary text-sm font-medium tracking-wide uppercase mb-3">Lineage</p>
+            <p className="text-primary text-sm font-medium tracking-wide uppercase mb-3">Wisdom</p>
             <h2 className="text-3xl md:text-4xl font-display font-semibold">
-              Rooted in the great tradition
+              Guided by Zen Masters
             </h2>
           </motion.div>
 
@@ -309,23 +309,23 @@ export default function LandingPage() {
           >
             {[
               {
-                name: "Shunryu Suzuki",
-                concept: "Beginner's mind",
+                name: "Beginner's Mind",
+                concept: "Shoshin",
                 desc: "In the beginner's mind there are many possibilities; in the expert's mind there are few.",
               },
               {
-                name: "Eihei Dōgen",
-                concept: "Being-time",
+                name: "Being-Time",
+                concept: "Uji",
                 desc: "Every moment is all being; each moment is the entire world. Reflect on whether any being or world is left out.",
               },
               {
-                name: "Alan Watts",
-                concept: "The art of letting go",
+                name: "The Art of Letting Go",
+                concept: "Wu Wei",
                 desc: "Muddy water is best cleared by leaving it alone. The mind settles when you stop trying to settle it.",
               },
               {
-                name: "Thich Nhat Hanh",
-                concept: "Mindful presence",
+                name: "Mindful Presence",
+                concept: "Sati",
                 desc: "The present moment is filled with joy and happiness. If you are attentive, you will see it.",
               },
             ].map((t) => (
@@ -459,7 +459,7 @@ export default function LandingPage() {
                 },
                 {
                   q: "Who is Roshi?",
-                  a: "Roshi is BigMind's AI meditation companion. Drawing on the wisdom of Suzuki, Dōgen, Watts, and Thich Nhat Hanh, Roshi engages you in reflective dialogue about your practice through the meditation diary.",
+                  a: "Roshi is BigMind's AI meditation companion. Drawing on the wisdom of Zen masters, Roshi engages you in reflective dialogue about your practice through the meditation diary.",
                 },
                 {
                   q: "Can I cancel anytime?",
