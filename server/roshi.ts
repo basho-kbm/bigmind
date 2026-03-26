@@ -105,6 +105,8 @@ export async function generateDiaryOpener(): Promise<string> {
   ]);
 }
 
+export { model as geminiModel };
+
 export async function generateInsight(
   sleepData: { count: number; totalMinutes: number; favoriteType: string },
   timerData: { count: number; totalMinutes: number },

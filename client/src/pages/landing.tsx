@@ -6,6 +6,7 @@ import {
   Timer,
   BookHeart,
   BarChart3,
+  Sunrise,
   Check,
   Sparkles,
   Crown,
@@ -62,6 +63,7 @@ function Section({
 /* ─── pricing data ─── */
 const features = [
   "Guided sleep meditations",
+  "Daily guided meditation",
   "Meditation timer with bells",
   "AI meditation journal (Roshi)",
   "Personal practice insights",
@@ -196,7 +198,7 @@ export default function LandingPage() {
           </motion.div>
 
           <motion.div
-            className="grid md:grid-cols-2 gap-6"
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
             variants={stagger}
           >
             {[
@@ -219,6 +221,11 @@ export default function LandingPage() {
                 icon: BarChart3,
                 title: "Practice Insights",
                 desc: "AI-powered observations about your meditation journey. See patterns, track consistency, and deepen your understanding.",
+              },
+              {
+                icon: Sunrise,
+                title: "Daily Meditation",
+                desc: "A fresh guided meditation every day, exploring core Zen concepts. Just press play \u2014 no choices needed.",
               },
             ].map((f) => (
               <motion.div key={f.title} variants={fadeUp}>

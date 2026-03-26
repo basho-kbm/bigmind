@@ -66,6 +66,18 @@ export const diaryEntries = sqliteTable("diary_entries", {
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+// Daily meditations — one per day, cycling through 5 Zen concepts
+export const dailyMeditations = sqliteTable("daily_meditations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull().unique(), // YYYY-MM-DD
+  concept: text("concept").notNull(), // no-self, impermanence, emptiness, beginners-mind, non-attachment
+  conceptLabel: text("concept_label").notNull(), // "No Self", "Impermanence", etc.
+  script: text("script").notNull(), // the meditation script text
+  voiceId: text("voice_id").notNull(),
+  audioFilename: text("audio_filename"), // filename in public/audio/daily/
+  generatedAt: text("generated_at").notNull(),
+});
+
 // Cached audio library — pre-generated meditations refreshed daily
 export const audioLibrary = sqliteTable("audio_library", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -84,6 +96,7 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
 export const insertSleepSessionSchema = createInsertSchema(sleepSessions).omit({ id: true });
 export const insertTimerSessionSchema = createInsertSchema(timerSessions).omit({ id: true });
 export const insertDiaryEntrySchema = createInsertSchema(diaryEntries).omit({ id: true });
+export const insertDailyMeditationSchema = createInsertSchema(dailyMeditations).omit({ id: true });
 export const insertAudioLibrarySchema = createInsertSchema(audioLibrary).omit({ id: true });
 
 // Types
@@ -97,6 +110,8 @@ export type TimerSession = typeof timerSessions.$inferSelect;
 export type InsertTimerSession = z.infer<typeof insertTimerSessionSchema>;
 export type DiaryEntry = typeof diaryEntries.$inferSelect;
 export type InsertDiaryEntry = z.infer<typeof insertDiaryEntrySchema>;
+export type DailyMeditation = typeof dailyMeditations.$inferSelect;
+export type InsertDailyMeditation = z.infer<typeof insertDailyMeditationSchema>;
 export type AudioLibraryItem = typeof audioLibrary.$inferSelect;
 export type InsertAudioLibraryItem = z.infer<typeof insertAudioLibrarySchema>;
 export type Visitor = typeof visitors.$inferSelect;

@@ -2,6 +2,7 @@ import {
   type SleepSession, type InsertSleepSession, sleepSessions,
   type TimerSession, type InsertTimerSession, timerSessions,
   type DiaryEntry, type InsertDiaryEntry, diaryEntries,
+  type DailyMeditation, type InsertDailyMeditation, dailyMeditations,
   type AudioLibraryItem, type InsertAudioLibraryItem, audioLibrary,
   type Visitor, visitors,
   type User, type InsertUser, users,
@@ -58,6 +59,11 @@ export interface IStorage {
   upsertAudioLibraryItem(item: InsertAudioLibraryItem): Promise<AudioLibraryItem>;
   getExpiredAudio(): Promise<AudioLibraryItem[]>;
   getAllAudioItems(): Promise<AudioLibraryItem[]>;
+
+  // Daily meditations
+  getDailyMeditation(date: string): Promise<DailyMeditation | undefined>;
+  createDailyMeditation(entry: InsertDailyMeditation): Promise<DailyMeditation>;
+  getLatestDailyMeditation(): Promise<DailyMeditation | undefined>;
 }
 
 export function runMigrations() {
@@ -82,6 +88,17 @@ export function runMigrations() {
     cancel_at_period_end INTEGER DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`);
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS daily_meditations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL UNIQUE,
+    concept TEXT NOT NULL,
+    concept_label TEXT NOT NULL,
+    script TEXT NOT NULL,
+    voice_id TEXT NOT NULL,
+    audio_filename TEXT,
+    generated_at TEXT NOT NULL
   )`);
 }
 
@@ -215,6 +232,19 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAudioItems(): Promise<AudioLibraryItem[]> {
     return db.select().from(audioLibrary).all();
+  }
+
+  // === Daily Meditations ===
+  async getDailyMeditation(date: string): Promise<DailyMeditation | undefined> {
+    return db.select().from(dailyMeditations).where(eq(dailyMeditations.date, date)).get();
+  }
+
+  async createDailyMeditation(entry: InsertDailyMeditation): Promise<DailyMeditation> {
+    return db.insert(dailyMeditations).values(entry).returning().get();
+  }
+
+  async getLatestDailyMeditation(): Promise<DailyMeditation | undefined> {
+    return db.select().from(dailyMeditations).orderBy(desc(dailyMeditations.id)).limit(1).get();
   }
 }
 

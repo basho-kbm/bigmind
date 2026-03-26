@@ -17,6 +17,7 @@ import AccountPage from "@/pages/account";
 import PricingPage from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import DailyPage from "@/pages/daily";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType<any> }) {
   const { isAuthenticated, isLoading, isTrialing, hasActiveSubscription } = useAuth();
@@ -105,6 +106,7 @@ function AppRouter() {
       <Route path="/pricing" component={PricingPage} />
       <Route path="/account">{() => <AuthRequiredRoute component={AccountPage} />}</Route>
       <Route path="/">{() => <RootRoute />}</Route>
+      <Route path="/daily">{() => <ProtectedRoute component={DailyPage} />}</Route>
       <Route path="/diary">{() => <ProtectedRoute component={DiaryPage} />}</Route>
       <Route path="/diary/:id">{() => <ProtectedRoute component={DiaryPage} />}</Route>
       <Route path="/insights">{() => <ProtectedRoute component={InsightsPage} />}</Route>

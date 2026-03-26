@@ -5,6 +5,7 @@ import fs from "fs";
 import { storage } from "./storage";
 import { askRoshi, generateDiaryOpener, generateInsight } from "./roshi";
 import { generateAudioLibrary, generateSingleAudio } from "./audio-gen";
+import { generateDailyMeditation, getTodaysConcept, getTomorrowsConcept, CONCEPTS } from "./daily-gen";
 import { setupAuth, authRouter } from "./auth";
 import { billingRouter, webhookRouter } from "./stripe";
 import { requireAuth, requireSubscription } from "./middleware";
@@ -165,6 +166,59 @@ export async function registerRoutes(
       }
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============ Daily Meditation ============
+
+  // GET /api/daily — returns today's daily meditation (lazy-generates if needed)
+  app.get("/api/daily", requireAuth, requireSubscription, async (_req, res) => {
+    try {
+      const result = await generateDailyMeditation();
+      const concept = CONCEPTS.find(c => c.id === result.concept);
+      const tomorrow = getTomorrowsConcept();
+
+      res.json({
+        date: result.date,
+        concept: result.concept,
+        conceptLabel: result.conceptLabel,
+        conceptPaliName: concept?.paliName || "",
+        conceptDescription: concept?.description || "",
+        script: result.script,
+        audioUrl: result.audioFilename
+          ? `/api/audio/files/daily/${result.audioFilename}`
+          : null,
+        voiceId: result.voiceId,
+        generatedAt: result.generatedAt,
+        tomorrow: {
+          concept: tomorrow.id,
+          label: tomorrow.label,
+          paliName: tomorrow.paliName,
+        },
+      });
+    } catch (error) {
+      console.error("Daily meditation error:", error);
+      res.status(500).json({ error: "Failed to generate daily meditation" });
+    }
+  });
+
+  // GET /api/daily/concept — public, returns today's concept info (for landing page teaser)
+  app.get("/api/daily/concept", (_req, res) => {
+    try {
+      const concept = getTodaysConcept();
+      const tomorrow = getTomorrowsConcept();
+      res.json({
+        concept: concept.id,
+        label: concept.label,
+        paliName: concept.paliName,
+        description: concept.description,
+        tomorrow: {
+          label: tomorrow.label,
+          paliName: tomorrow.paliName,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get daily concept" });
     }
   });
 

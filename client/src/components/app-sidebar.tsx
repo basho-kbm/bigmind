@@ -1,4 +1,4 @@
-import { Moon, BookHeart, Brain, Timer, User, Crown, Clock } from "lucide-react";
+import { Moon, Sunrise, BookHeart, Brain, Timer, User, Crown, Clock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navItems = [
   { title: "Sleep", url: "/", icon: Moon },
+  { title: "Daily", url: "/daily", icon: Sunrise },
   { title: "Diary", url: "/diary", icon: BookHeart },
   { title: "Insights", url: "/insights", icon: Brain },
   { title: "Timer", url: "/timer", icon: Timer },
