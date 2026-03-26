@@ -21,26 +21,6 @@
       "expiresAt": "2026-03-26T18:21:22.501504"
     },
     {
-      "meditationType": "forest-sounds",
-      "duration": 5,
-      "voiceId": "kore",
-      "script": "",
-      "filename": "forest-sounds_5min_kore.mp3",
-      "fileSize": 1521210,
-      "generatedAt": "2026-03-25T18:21:22.501514",
-      "expiresAt": "2026-03-26T18:21:22.501516"
-    },
-    {
-      "meditationType": "ocean-sounds",
-      "duration": 5,
-      "voiceId": "aoede",
-      "script": "",
-      "filename": "ocean-sounds_5min_aoede.mp3",
-      "fileSize": 1478970,
-      "generatedAt": "2026-03-25T18:21:22.501525",
-      "expiresAt": "2026-03-26T18:21:22.501527"
-    },
-    {
       "meditationType": "open-awareness",
       "duration": 5,
       "voiceId": "charon",

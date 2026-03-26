@@ -56,10 +56,7 @@ const SCRIPT_PROMPTS: Record<string, (dur: number) => string> = {
   "emptiness": (d) => `Write a ${d}-minute meditation on emptiness — interconnected nature of all things. Draw from Thich Nhat Hanh's interbeing. Use lots of "..." pauses. STRICT: maximum 500 words.`,
   "beginners-mind": (d) => `Write a ${d}-minute beginner's mind meditation. Each breath as if first. Draw from Shunryu Suzuki. Use lots of "..." pauses. STRICT: maximum 500 words.`,
   "zen-stories": (d) => `Write a ${d}-minute meditation weaving in a brief Zen story. Tell slowly, then sit with it. Use lots of "..." pauses. STRICT: maximum 500 words.`,
-  "ocean-sounds": (_d) => `Write a brief 30-second spoken intro for an ocean sounds sleep meditation. Describe waves, invite rest. About 60 words.`,
-  "forest-sounds": (_d) => `Write a brief 30-second intro for a forest sounds sleep meditation. Rustling leaves, birdsong. About 60 words.`,
-  "orchestra-warmup": (_d) => `Write a brief 30-second intro for an orchestra warm-up meditation. Instruments tuning. About 60 words.`,
-  "jungle-sounds": (_d) => `Write a brief 30-second intro for a jungle sounds meditation. Lush canopy, rain on leaves. About 60 words.`,
+  // Ambient sound types have NO voice track — pure soundscapes only
 };
 
 const TYPE_VOICE_MAP: Record<string, string> = {
@@ -71,10 +68,7 @@ const TYPE_VOICE_MAP: Record<string, string> = {
   "emptiness": "zephyr",
   "beginners-mind": "kore",
   "zen-stories": "charon",
-  "ocean-sounds": "aoede",
-  "forest-sounds": "kore",
-  "orchestra-warmup": "puck",
-  "jungle-sounds": "zephyr",
+  // Ambient sound types excluded — no voice track
 };
 
 const SOUND_TYPES = ["ocean-sounds", "forest-sounds", "orchestra-warmup", "jungle-sounds"];

@@ -99,23 +99,27 @@ export default function SleepPage() {
     setIsPlaying(true);
     startSession.mutate();
 
-    // Try to load pre-generated audio
+    // Load audio — ambient sounds are pure soundscapes (no voice), guided types use TTS
     setAudioLoading(true);
+    const isAmbient = MEDITATION_TYPES.find(t => t.id === selectedType)?.category === "sounds";
     try {
-      const res = await apiRequest(
-        "GET",
-        `/api/audio/find?type=${selectedType}&duration=${selectedDuration}&voice=${selectedVoice}`
-      );
-      const data = await res.json();
-      if (data.found && data.audioUrl) {
-        const audioUrl = `${getApiBase()}${data.audioUrl}`;
-        const audio = new Audio(audioUrl);
-        audio.volume = volume / 100;
-        audio.loop = true; // Loop for ambient sounds
-        audioRef.current = audio;
-        await audio.play();
-        setAudioAvailable(true);
+      if (!isAmbient) {
+        // Guided meditations: fetch pre-generated voice audio
+        const res = await apiRequest(
+          "GET",
+          `/api/audio/find?type=${selectedType}&duration=${selectedDuration}&voice=${selectedVoice}`
+        );
+        const data = await res.json();
+        if (data.found && data.audioUrl) {
+          const audioUrl = `${getApiBase()}${data.audioUrl}`;
+          const audio = new Audio(audioUrl);
+          audio.volume = volume / 100;
+          audioRef.current = audio;
+          await audio.play();
+          setAudioAvailable(true);
+        }
       }
+      // Ambient sounds: no voice track, just the timer with silence
     } catch (err) {
       console.log("No pre-generated audio available");
     }
