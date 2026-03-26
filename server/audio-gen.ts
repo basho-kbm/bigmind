@@ -8,7 +8,7 @@
 import fs from "fs";
 import path from "path";
 import { textToSpeechPython } from "./tts-bridge";
-import { geminiModel } from "./roshi";
+import { geminiModel, checkAndIncrementApiCall } from "./roshi";
 
 const AUDIO_DIR = path.resolve(process.cwd(), "public/audio");
 const MANIFEST_PATH = path.join(AUDIO_DIR, "manifest.json");
@@ -75,8 +75,8 @@ async function generateScript(meditationType: string, duration: number): Promise
   const promptFn = SCRIPT_PROMPTS[meditationType];
   if (!promptFn) return "";
 
-  if (!geminiModel) {
-    console.warn("[audio-gen] Gemini not available — cannot generate script");
+  if (!geminiModel || !checkAndIncrementApiCall()) {
+    console.warn("[audio-gen] Gemini not available or daily limit reached");
     return "";
   }
 

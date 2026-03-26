@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import path from "path";
 import fs from "fs";
 import { storage } from "./storage";
-import { askRoshi, generateDiaryOpener, generateInsight } from "./roshi";
+import { askRoshi, generateDiaryOpener, generateInsight, getApiUsage } from "./roshi";
 import { generateAudioLibrary, generateSingleAudio } from "./audio-gen";
 import { generateDailyMeditation, getTodaysConcept, getTomorrowsConcept, CONCEPTS } from "./daily-gen";
 import { setupAuth, authRouter } from "./auth";
@@ -34,6 +34,11 @@ export async function registerRoutes(
 
   // Register billing routes (require auth but not subscription)
   app.use(billingRouter);
+
+  // ============ API Usage Monitor ============
+  app.get("/api/admin/usage", requireAuth, (_req, res) => {
+    res.json(getApiUsage());
+  });
 
   // ============ Audio Library ============
 

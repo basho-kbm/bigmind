@@ -5,7 +5,7 @@
  * Uses Gemini for script generation and TTS bridge for audio.
  */
 
-import { geminiModel } from "./roshi";
+import { geminiModel, checkAndIncrementApiCall } from "./roshi";
 import { textToSpeechPython } from "./tts-bridge";
 import { storage } from "./storage";
 import type { DailyMeditation } from "@shared/schema";
@@ -239,7 +239,7 @@ export async function generateDailyMeditation(): Promise<DailyMeditation & { con
   // Generate script
   let script: string;
 
-  if (geminiModel) {
+  if (geminiModel && checkAndIncrementApiCall()) {
     try {
       const prompt = `Write a guided meditation script for beginners on the theme of "${concept.label}" (${concept.paliName}).
 

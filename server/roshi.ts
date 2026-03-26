@@ -16,12 +16,38 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "
 
 let model: any = null;
 
+// Use gemini-2.5-flash: 10 RPM, 500 RPD on free tier (best balance of speed + quota)
+const GEMINI_MODEL = "gemini-2.5-flash";
+
 if (GEMINI_KEY) {
   const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-  model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  console.log("[roshi] Gemini initialized");
+  model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+  console.log(`[roshi] Gemini initialized (${GEMINI_MODEL})`);
 } else {
   console.warn("[roshi] No GEMINI_API_KEY set — Roshi will use fallback responses");
+}
+
+// ── Rate limit tracking ──
+let apiCallCount = 0;
+let apiCallResetDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+const API_DAILY_LIMIT = 450; // Conservative buffer under 500 RPD free tier
+
+function checkAndIncrementApiCall(): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== apiCallResetDate) {
+    apiCallCount = 0;
+    apiCallResetDate = today;
+  }
+  if (apiCallCount >= API_DAILY_LIMIT) {
+    console.warn(`[roshi] Daily API limit reached (${apiCallCount}/${API_DAILY_LIMIT}). Using fallback.`);
+    return false;
+  }
+  apiCallCount++;
+  return true;
+}
+
+export function getApiUsage() {
+  return { calls: apiCallCount, limit: API_DAILY_LIMIT, date: apiCallResetDate };
 }
 
 const ROSHI_SYSTEM_PROMPT = `You are Roshi, a wise and compassionate Zen meditation teacher within the BigMind meditation platform. Your teachings are deeply informed by four great teachers:
@@ -70,8 +96,8 @@ const FALLBACK_RESPONSES = [
 export async function askRoshi(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
 ): Promise<string> {
-  // Fallback if Gemini not configured
-  if (!model) {
+  // Fallback if Gemini not configured or daily limit reached
+  if (!model || !checkAndIncrementApiCall()) {
     const pool = messages.length <= 1 ? FALLBACK_OPENERS : FALLBACK_RESPONSES;
     return pool[Math.floor(Math.random() * pool.length)];
   }
@@ -88,8 +114,10 @@ export async function askRoshi(
     const lastMessage = messages[messages.length - 1];
     const result = await chat.sendMessage(lastMessage.content);
     return result.response.text() || "Take a breath. I am here.";
-  } catch (error) {
-    console.error("Roshi error:", error);
+  } catch (error: any) {
+    console.error("Roshi error:", error?.message || error);
+    // On 429 rate limit, don't count against our tracker
+    if (error?.status === 429) apiCallCount--;
     // Fall back gracefully
     const pool = FALLBACK_RESPONSES;
     return pool[Math.floor(Math.random() * pool.length)];
@@ -105,7 +133,7 @@ export async function generateDiaryOpener(): Promise<string> {
   ]);
 }
 
-export { model as geminiModel };
+export { model as geminiModel, checkAndIncrementApiCall };
 
 export async function generateInsight(
   sleepData: { count: number; totalMinutes: number; favoriteType: string },
