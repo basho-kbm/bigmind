@@ -1,16 +1,14 @@
 /**
  * BigMind Audio Generator
  *
- * Generates meditation scripts via Anthropic LLM, then converts to speech
- * via Gemini TTS. Saves MP3 files to public/audio/ with a JSON manifest.
+ * Generates meditation scripts via Gemini, then converts to speech
+ * via TTS. Saves MP3 files to public/audio/ with a JSON manifest.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs";
 import path from "path";
 import { textToSpeechPython } from "./tts-bridge";
-
-const anthropic = new Anthropic();
+import { geminiModel } from "./roshi";
 
 const AUDIO_DIR = path.resolve(process.cwd(), "public/audio");
 const MANIFEST_PATH = path.join(AUDIO_DIR, "manifest.json");
@@ -77,15 +75,17 @@ async function generateScript(meditationType: string, duration: number): Promise
   const promptFn = SCRIPT_PROMPTS[meditationType];
   if (!promptFn) return "";
 
-  const response = await anthropic.messages.create({
-    model: "claude_haiku_4_5",
-    max_tokens: 2048,
-    system: SCRIPT_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: promptFn(duration) }],
+  if (!geminiModel) {
+    console.warn("[audio-gen] Gemini not available — cannot generate script");
+    return "";
+  }
+
+  const result = await geminiModel.generateContent({
+    contents: [{ role: "user", parts: [{ text: promptFn(duration) }] }],
+    systemInstruction: SCRIPT_SYSTEM_PROMPT,
   });
 
-  const textBlock = response.content.find(b => b.type === "text");
-  return (textBlock as any)?.text || "";
+  return result.response.text() || "";
 }
 
 async function textToSpeech(text: string, voice: string, outputPath: string): Promise<void> {
