@@ -18,12 +18,11 @@ export default function MarketingHome() {
           </div>
           <div className="max-w-3xl space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
-              Calm guidance for beginners, centered on sleep and built for real life.
+              Sleep better with calm, beginner-friendly meditation that actually feels usable.
             </h1>
             <p className="text-lg text-stone-300 sm:text-xl">
-              {appConfig.name} is the subscription meditation product for beginners, guided by
-              Roshi-bot and designed to make daily practice feel clear, grounded, and easy to
-              return to.
+              {appConfig.name} helps beginners quiet mental noise at night, build a simple bedtime
+              practice, and return to sleep-focused guidance that feels grounded instead of airy.
             </p>
           </div>
           <div className="flex flex-wrap gap-4">
@@ -55,7 +54,7 @@ export default function MarketingHome() {
             <ul className="mt-4 space-y-3 text-sm text-stone-200">
               <li>• Responsive web app</li>
               <li>• $9.99 monthly subscription</li>
-              <li>• Daily meditation + course + journal + timer + insights</li>
+              <li>• Sleep-first meditation + journal + calming guidance</li>
               <li>• Stable enough to sell immediately</li>
             </ul>
           </div>

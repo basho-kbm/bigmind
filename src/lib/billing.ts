@@ -6,7 +6,7 @@ import { stripe } from "@/lib/stripe/server";
 
 const ACTIVE_STATUSES = new Set(["trialing", "active"]);
 
-type ProfileRecord = {
+export type ProfileRecord = {
   id: string;
   created_at: string;
   updated_at: string;
@@ -47,21 +47,57 @@ export const getBillingProfile = cache(async () => {
   };
 });
 
-export async function ensureStripeCustomer(params: {
+export async function ensureProfile(params: {
   userId: string;
-  email: string | null | undefined;
+  email?: string | null;
   fullName?: string | null;
 }) {
   const admin = createSupabaseAdminClient();
   const { data: existing, error: loadError } = await admin
     .from("profiles")
-    .select("stripe_customer_id, full_name")
+    .select("*")
     .eq("id", params.userId)
-    .maybeSingle<{ stripe_customer_id?: string | null; full_name?: string | null }>();
+    .maybeSingle<ProfileRecord>();
 
   if (loadError) {
     throw loadError;
   }
+
+  if (existing) {
+    return existing;
+  }
+
+  const profileInsert = {
+    id: params.userId,
+    full_name: params.fullName ?? null,
+    onboarding_completed: false,
+    beginner_focus: true,
+    sleep_focus: true,
+  };
+
+  const { data: created, error: createError } = await admin
+    .from("profiles")
+    .upsert(profileInsert, { onConflict: "id" })
+    .select("*")
+    .single<ProfileRecord>();
+
+  if (createError) {
+    throw createError;
+  }
+
+  return created;
+}
+
+export async function ensureStripeCustomer(params: {
+  userId: string;
+  email: string | null | undefined;
+  fullName?: string | null;
+}) {
+  const existing = await ensureProfile({
+    userId: params.userId,
+    email: params.email,
+    fullName: params.fullName,
+  });
 
   if (existing?.stripe_customer_id) {
     return existing.stripe_customer_id;
@@ -75,6 +111,7 @@ export async function ensureStripeCustomer(params: {
     },
   });
 
+  const admin = createSupabaseAdminClient();
   const { error: updateError } = await admin
     .from("profiles")
     .upsert(

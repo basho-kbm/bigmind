@@ -6,6 +6,7 @@ import { SignOutForm } from "./sign-out-form";
 
 const appNav = [
   { href: "/app", label: "Dashboard" },
+  { href: "/app/orientation", label: "Orientation" },
   { href: "/app/today", label: "Today" },
   { href: "/app/journal", label: "Journal" },
   { href: "/app/insights", label: "Insights" },

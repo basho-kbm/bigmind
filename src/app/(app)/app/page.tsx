@@ -34,12 +34,20 @@ export default async function DashboardPage() {
             : "Authentication is in. The next unlock is Stripe checkout and subscription state flowing cleanly through the app."}
         </p>
         {!isSubscribed ? (
-          <Link
-            href="/app/settings"
-            className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
-          >
-            Finish billing setup
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              href="/app/orientation"
+              className="inline-flex rounded-full border border-stone-700 px-5 py-3 font-medium text-stone-100 transition hover:border-stone-500"
+            >
+              Start orientation
+            </Link>
+            <Link
+              href="/app/settings"
+              className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
+            >
+              Unlock sleep access
+            </Link>
+          </div>
         ) : null}
       </section>
 
