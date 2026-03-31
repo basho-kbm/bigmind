@@ -18,6 +18,9 @@ export type Database = {
           onboarding_completed: boolean;
           beginner_focus: boolean;
           sleep_focus: boolean;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          subscription_status: string | null;
         };
         Insert: {
           id: string;
@@ -27,6 +30,9 @@ export type Database = {
           onboarding_completed?: boolean;
           beginner_focus?: boolean;
           sleep_focus?: boolean;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_status?: string | null;
         };
         Update: {
           id?: string;
@@ -36,6 +42,9 @@ export type Database = {
           onboarding_completed?: boolean;
           beginner_focus?: boolean;
           sleep_focus?: boolean;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_status?: string | null;
         };
         Relationships: [];
       };
