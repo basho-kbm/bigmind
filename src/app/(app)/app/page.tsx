@@ -5,7 +5,7 @@ import { getBillingProfile } from "@/lib/billing";
 const dashboardCards = [
   {
     title: "Today’s meditation",
-    description: "Daily guided meditation delivery is the next product loop to make real.",
+    description: "A daily sleep session recommendation now has a real app-side data layer and Today surface.",
   },
   {
     title: "Journal",
@@ -30,8 +30,8 @@ export default async function DashboardPage() {
         </h2>
         <p className="max-w-2xl text-stone-300">
           {isSubscribed
-            ? "Now the priority is turning Today into a real daily meditation experience people come back for."
-            : "Authentication is in. The next unlock is Stripe checkout and subscription state flowing cleanly through the app."}
+            ? "Today now has a real daily session recommendation layer. The next priority is wiring playback, tracking, and fallback handling cleanly through the experience."
+            : "Authentication is in. The next unlock is tightening the first-session path so BigMind Sleep feels real before billing matters."}
         </p>
         {!isSubscribed ? (
           <div className="flex flex-wrap gap-4">
