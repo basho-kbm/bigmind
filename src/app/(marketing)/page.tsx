@@ -19,6 +19,11 @@ const sleepGuides = [
     title: "Body Scan for Sleep",
     description: "A gentle guide to using body awareness to release tension and fall asleep faster.",
   },
+  {
+    href: "/zen-meditation-for-sleep",
+    title: "Zen Meditation for Sleep",
+    description: "A simpler, Zen-inspired way to calm mental noise at night without adding pressure.",
+  },
 ];
 
 export default function MarketingHome() {
@@ -109,7 +114,7 @@ export default function MarketingHome() {
               product promise and move into BigMind Sleep with less friction.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             {sleepGuides.map((guide) => (
               <Link
                 key={guide.href}
