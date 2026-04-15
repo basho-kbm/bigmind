@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { SoundscapeKey, SleepFocusKey } from "@/lib/daily-content";
+import {
+  SLEEP_SESSION_COOKIE_NAME,
+  type PersistedSleepSessionState,
+} from "@/lib/sleep-session-state";
 
 const focusOptions = [
   { value: "body_scan", label: "Body scan" },
@@ -112,21 +116,14 @@ type SleepConfigPanelProps = {
   defaultFocus?: SleepFocusKey;
   defaultSound?: SoundscapeKey;
   defaultLength?: string;
+  rememberedFocus?: SleepFocusKey;
+  rememberedSound?: SoundscapeKey;
+  rememberedLength?: string;
+  initialLastSession?: PersistedSleepSessionState | null;
   spokenTitle: string;
   openingLine: string;
   structure: string[];
   soundscapeTitle: string;
-};
-
-type SessionHistoryRecord = {
-  dateKey: string;
-  dateLabel: string;
-  focus: SleepFocusKey;
-  focusLabel: string;
-  sound: SoundscapeKey;
-  soundLabel: string;
-  lengthMinutes: number;
-  completedAt: string;
 };
 
 const LAST_SESSION_STORAGE_KEY = "bigmind:last-sleep-session";
@@ -146,6 +143,14 @@ function formatCompletedAt(value: string) {
   });
 }
 
+function persistSleepSessionCookie(record: PersistedSleepSessionState) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.cookie = `${SLEEP_SESSION_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(record))}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
+}
+
 function readLastSession() {
   if (typeof window === "undefined") {
     return null;
@@ -158,13 +163,13 @@ function readLastSession() {
   }
 
   try {
-    return JSON.parse(raw) as SessionHistoryRecord;
+    return JSON.parse(raw) as PersistedSleepSessionState;
   } catch {
     return null;
   }
 }
 
-function persistLastSession(record: SessionHistoryRecord) {
+function persistLastSession(record: PersistedSleepSessionState) {
   if (typeof window === "undefined") {
     return;
   }
@@ -178,21 +183,25 @@ export function SleepConfigPanel({
   defaultFocus = "body_scan",
   defaultSound = "ocean",
   defaultLength = "20",
+  rememberedFocus,
+  rememberedSound,
+  rememberedLength,
+  initialLastSession = null,
   spokenTitle,
   openingLine,
   structure,
   soundscapeTitle,
 }: SleepConfigPanelProps) {
-  const [focus, setFocus] = useState(defaultFocus);
-  const [sound, setSound] = useState(defaultSound);
-  const [length, setLength] = useState(defaultLength);
+  const [focus, setFocus] = useState(rememberedFocus ?? defaultFocus);
+  const [sound, setSound] = useState(rememberedSound ?? defaultSound);
+  const [length, setLength] = useState(rememberedLength ?? defaultLength);
   const [view, setView] = useState<"config" | "active" | "complete">("config");
   const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(Number(defaultLength) * 60);
+  const [remainingSeconds, setRemainingSeconds] = useState(Number(rememberedLength ?? defaultLength) * 60);
   const [speechAvailable, setSpeechAvailable] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
-  const [lastSession, setLastSession] = useState<SessionHistoryRecord | null>(null);
+  const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const spokenPhaseRef = useRef<number | null>(null);
 
   const totalSeconds = Math.max(60, Number(length) * 60);
@@ -227,8 +236,8 @@ export function SleepConfigPanel({
 
   useEffect(() => {
     setSpeechAvailable(typeof window !== "undefined" && "speechSynthesis" in window);
-    setLastSession(readLastSession());
-  }, []);
+    setLastSession(readLastSession() ?? initialLastSession);
+  }, [initialLastSession]);
 
   useEffect(() => {
     if (view === "config") {
@@ -320,7 +329,7 @@ export function SleepConfigPanel({
       window.speechSynthesis.cancel();
     }
 
-    const record: SessionHistoryRecord = {
+    const record: PersistedSleepSessionState = {
       dateKey,
       dateLabel,
       focus,
@@ -332,6 +341,7 @@ export function SleepConfigPanel({
     };
 
     persistLastSession(record);
+    persistSleepSessionCookie(record);
     setLastSession(record);
     setView("complete");
     setIsPaused(false);
@@ -341,10 +351,12 @@ export function SleepConfigPanel({
     spokenPhaseRef.current = null;
     setView("config");
     setShowCustomization(false);
-    setFocus(defaultFocus);
-    setSound(defaultSound);
-    setLength(defaultLength);
-    setRemainingSeconds(Math.max(60, Number(defaultLength) * 60));
+    setFocus(lastSession?.focus ?? rememberedFocus ?? defaultFocus);
+    setSound(lastSession?.sound ?? rememberedSound ?? defaultSound);
+    setLength(String(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength));
+    setRemainingSeconds(
+      Math.max(60, Number(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength) * 60),
+    );
     setIsPaused(false);
   }
 
@@ -391,6 +403,12 @@ export function SleepConfigPanel({
                 Browser-spoken guidance is unavailable here, so the session runs with on-screen prompts and a timer.
               </p>
             )}
+          </div>
+
+          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
+            {lastSession
+              ? `Last completed: ${lastSession.focusLabel} with ${lastSession.soundLabel.toLowerCase()} for ${lastSession.lengthMinutes} minutes on ${formatCompletedAt(lastSession.completedAt)}.`
+              : `Once you finish a session, BigMind will remember your last completed setup and use it to make the return path feel more continuous.`}
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">

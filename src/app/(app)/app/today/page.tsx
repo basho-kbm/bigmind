@@ -1,9 +1,17 @@
+import { cookies } from "next/headers";
+
 import { getDailySleepSession } from "@/lib/daily-content";
+import {
+  SLEEP_SESSION_COOKIE_NAME,
+  parseSleepSessionState,
+} from "@/lib/sleep-session-state";
 
 import { SleepConfigPanel } from "./SleepConfigPanel";
 
-export default function TodayPage() {
+export default async function TodayPage() {
   const session = getDailySleepSession();
+  const cookieStore = await cookies();
+  const lastSession = parseSleepSessionState(cookieStore.get(SLEEP_SESSION_COOKIE_NAME)?.value ?? null);
 
   return (
     <div className="space-y-8">
@@ -15,6 +23,12 @@ export default function TodayPage() {
           refreshed soundscape to make it easier to fall asleep without forcing it.
         </p>
       </section>
+
+      {lastSession ? (
+        <div className="rounded-3xl border border-stone-800 bg-stone-900/40 p-5 text-sm text-stone-300">
+          Returning from your last completed session: <strong>{lastSession.focusLabel}</strong> with <strong>{lastSession.soundLabel.toLowerCase()}</strong> for <strong>{lastSession.lengthMinutes} minutes</strong>.
+        </div>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
@@ -67,6 +81,10 @@ export default function TodayPage() {
               defaultFocus={session.spokenTrack.focus}
               defaultSound={session.soundscape.key}
               defaultLength={String(session.defaultLengthMinutes)}
+              rememberedFocus={lastSession?.focus}
+              rememberedSound={lastSession?.sound}
+              rememberedLength={lastSession ? String(lastSession.lengthMinutes) : undefined}
+              initialLastSession={lastSession}
               spokenTitle={session.spokenTrack.title}
               openingLine={session.spokenTrack.openingLine}
               structure={session.spokenTrack.structure}
