@@ -191,6 +191,7 @@ export function SleepConfigPanel({
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(defaultLength) * 60);
   const [speechAvailable, setSpeechAvailable] = useState(false);
+  const [speechEnabled, setSpeechEnabled] = useState(false);
   const [lastSession, setLastSession] = useState<SessionHistoryRecord | null>(null);
   const spokenPhaseRef = useRef<number | null>(null);
 
@@ -267,7 +268,7 @@ export function SleepConfigPanel({
 
     spokenPhaseRef.current = currentPromptIndex;
 
-    if (!speechAvailable || typeof window === "undefined") {
+    if (!speechAvailable || !speechEnabled || typeof window === "undefined") {
       return;
     }
 
@@ -279,7 +280,13 @@ export function SleepConfigPanel({
     utterance.volume = 0.85;
 
     window.speechSynthesis.speak(utterance);
-  }, [currentPrompt, currentPromptIndex, speechAvailable, view]);
+  }, [currentPrompt, currentPromptIndex, speechAvailable, speechEnabled, view]);
+
+  useEffect(() => {
+    if (!speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [speechEnabled]);
 
   useEffect(() => {
     return () => {
@@ -369,11 +376,21 @@ export function SleepConfigPanel({
               Start tonight&apos;s recommended session
             </button>
 
-            <p className="text-xs text-stone-400">
-              {speechAvailable
-                ? "Browser-spoken guidance is available for this prototype session flow."
-                : "If browser-spoken guidance is unavailable, the session still runs with on-screen prompts and a timer."}
-            </p>
+            {speechAvailable ? (
+              <label className="flex items-center gap-3 rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
+                <input
+                  type="checkbox"
+                  checked={speechEnabled}
+                  onChange={(event) => setSpeechEnabled(event.target.checked)}
+                  className="h-4 w-4 rounded border-stone-600 bg-stone-950 text-emerald-400"
+                />
+                <span>Use browser-spoken guidance (beta)</span>
+              </label>
+            ) : (
+              <p className="text-xs text-stone-400">
+                Browser-spoken guidance is unavailable here, so the session runs with on-screen prompts and a timer.
+              </p>
+            )}
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
@@ -451,7 +468,7 @@ export function SleepConfigPanel({
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Session live</p>
             <h3 className="text-xl font-semibold text-stone-50">{sessionContent.title}</h3>
             <p className="text-sm text-stone-300">
-              {focusLabel} · {soundLabel} · {length} minutes
+              {focusLabel} · {soundLabel} · {length} minutes{speechEnabled && speechAvailable ? " · spoken guidance on" : ""}
             </p>
           </div>
 
