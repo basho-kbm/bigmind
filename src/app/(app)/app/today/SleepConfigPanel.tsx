@@ -187,6 +187,7 @@ export function SleepConfigPanel({
   const [sound, setSound] = useState(defaultSound);
   const [length, setLength] = useState(defaultLength);
   const [view, setView] = useState<"config" | "active" | "complete">("config");
+  const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(defaultLength) * 60);
   const [speechAvailable, setSpeechAvailable] = useState(false);
@@ -197,6 +198,10 @@ export function SleepConfigPanel({
 
   const focusLabel = focusOptions.find((option) => option.value === focus)?.label ?? "Body scan";
   const soundLabel = soundOptions.find((option) => option.value === sound)?.label ?? "Ocean";
+  const recommendedFocusLabel =
+    focusOptions.find((option) => option.value === defaultFocus)?.label ?? "Body scan";
+  const recommendedSoundLabel =
+    soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
 
   const sessionContent = useMemo(() => {
     const fallback = fallbackFocusContent[focus];
@@ -284,12 +289,23 @@ export function SleepConfigPanel({
     };
   }, []);
 
-  function handleStart(event: React.FormEvent) {
-    event.preventDefault();
+  function beginSession(nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) {
     spokenPhaseRef.current = null;
-    setRemainingSeconds(totalSeconds);
+    setFocus(nextFocus);
+    setSound(nextSound);
+    setLength(nextLength);
+    setRemainingSeconds(Math.max(60, Number(nextLength) * 60));
     setIsPaused(false);
     setView("active");
+  }
+
+  function handleStartRecommended() {
+    beginSession(defaultFocus, defaultSound, defaultLength);
+  }
+
+  function handleStartCustom(event: React.FormEvent) {
+    event.preventDefault();
+    beginSession(focus, sound, length);
   }
 
   function handleComplete() {
@@ -317,7 +333,11 @@ export function SleepConfigPanel({
   function handleReset() {
     spokenPhaseRef.current = null;
     setView("config");
-    setRemainingSeconds(totalSeconds);
+    setShowCustomization(false);
+    setFocus(defaultFocus);
+    setSound(defaultSound);
+    setLength(defaultLength);
+    setRemainingSeconds(Math.max(60, Number(defaultLength) * 60));
     setIsPaused(false);
   }
 
@@ -326,71 +346,101 @@ export function SleepConfigPanel({
       {view === "config" ? (
         <>
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Customize tonight</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s fastest path</p>
             <p className="text-sm text-stone-300">
-              Start the recommended session with one tap, or make a few gentle adjustments first.
+              Start the recommended session immediately. Customize only if you want to.
             </p>
           </div>
 
-          <form onSubmit={handleStart} className="space-y-4 text-sm text-stone-200">
+          <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
             <div className="space-y-2">
-              <p className="font-medium text-stone-100">Focus</p>
-              <select
-                value={focus}
-                onChange={(event) => setFocus(event.target.value as SleepFocusKey)}
-                className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-              >
-                {focusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <p className="font-medium text-stone-100">Soundscape</p>
-              <select
-                value={sound}
-                onChange={(event) => setSound(event.target.value as SoundscapeKey)}
-                className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-              >
-                {soundOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <p className="font-medium text-stone-100">Length</p>
-              <select
-                value={length}
-                onChange={(event) => setLength(event.target.value)}
-                className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-              >
-                {lengthOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Recommended tonight</p>
+              <h3 className="text-xl font-semibold text-stone-50">{spokenTitle}</h3>
+              <p className="text-sm text-stone-300">
+                {recommendedFocusLabel} · {recommendedSoundLabel} · {defaultLength} minutes
+              </p>
             </div>
 
             <button
-              type="submit"
-              className="mt-2 w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
+              type="button"
+              onClick={handleStartRecommended}
+              className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Start tonight&apos;s session
+              Start tonight&apos;s recommended session
             </button>
-          </form>
 
-          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
-            Tonight&apos;s default uses <strong>{sessionContent.title}</strong> with <strong>{sound === defaultSound ? soundscapeTitle : soundLabel}</strong>.{" "}
-            {speechAvailable
-              ? "Browser-spoken guidance is available for this prototype session flow."
-              : "If browser-spoken guidance is unavailable, use the on-screen prompts and timer."}
+            <p className="text-xs text-stone-400">
+              {speechAvailable
+                ? "Browser-spoken guidance is available for this prototype session flow."
+                : "If browser-spoken guidance is unavailable, the session still runs with on-screen prompts and a timer."}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+            <button
+              type="button"
+              onClick={() => setShowCustomization((current) => !current)}
+              className="flex w-full items-center justify-between text-left text-sm font-medium text-stone-100"
+            >
+              <span>Customize tonight instead</span>
+              <span className="text-stone-400">{showCustomization ? "Hide" : "Show"}</span>
+            </button>
+
+            {showCustomization ? (
+              <form onSubmit={handleStartCustom} className="mt-4 space-y-4 text-sm text-stone-200">
+                <div className="space-y-2">
+                  <p className="font-medium text-stone-100">Focus</p>
+                  <select
+                    value={focus}
+                    onChange={(event) => setFocus(event.target.value as SleepFocusKey)}
+                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
+                  >
+                    {focusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-medium text-stone-100">Soundscape</p>
+                  <select
+                    value={sound}
+                    onChange={(event) => setSound(event.target.value as SoundscapeKey)}
+                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
+                  >
+                    {soundOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-medium text-stone-100">Length</p>
+                  <select
+                    value={length}
+                    onChange={(event) => setLength(event.target.value)}
+                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
+                  >
+                    {lengthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
+                >
+                  Start custom session
+                </button>
+              </form>
+            ) : null}
           </div>
         </>
       ) : null}
