@@ -1,54 +1,44 @@
 import Link from "next/link";
 
-import { getBillingProfile } from "@/lib/billing";
-
 const dashboardCards = [
   {
-    title: "Today’s meditation",
-    description: "A daily sleep session recommendation now has a real app-side data layer and Today surface.",
+    title: "Today’s session",
+    description: "The critical path is making the nightly sleep session feel real, helpful, and worth returning to tomorrow.",
   },
   {
     title: "Journal",
-    description: "Reflection prompts and recent entries will become the retention anchor.",
+    description: "Journal is now a later-phase layer. It should come back only after the nightly loop earns trust.",
   },
   {
     title: "Insights",
-    description: "Roshi guidance will come after Today + Journal are generating real inputs.",
+    description: "Insights come later, after Today is generating real session behavior and return signals.",
   },
 ];
 
-export default async function DashboardPage() {
-  const billing = await getBillingProfile();
-  const isSubscribed = billing?.isSubscribed ?? false;
-
+export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <section className="space-y-3">
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Dashboard</p>
-        <h2 className="text-3xl font-semibold tracking-tight">
-          {isSubscribed ? "Your BigMind subscription is active." : "Your app access is live. Billing is next."}
-        </h2>
+        <h2 className="text-3xl font-semibold tracking-tight">BigMind Phase 1 is a free sleep-first loop.</h2>
         <p className="max-w-2xl text-stone-300">
-          {isSubscribed
-            ? "Today now has a real daily session recommendation layer. The next priority is wiring playback, tracking, and fallback handling cleanly through the experience."
-            : "Authentication is in. The next unlock is tightening the first-session path so BigMind Sleep feels real before billing matters."}
+          The job right now is not unlocking billing. It is making one nightly session genuinely
+          useful from start to finish, then giving people a reason to come back tomorrow.
         </p>
-        {!isSubscribed ? (
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/app/orientation"
-              className="inline-flex rounded-full border border-stone-700 px-5 py-3 font-medium text-stone-100 transition hover:border-stone-500"
-            >
-              Start orientation
-            </Link>
-            <Link
-              href="/app/settings"
-              className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
-            >
-              Unlock sleep access
-            </Link>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap gap-4">
+          <Link
+            href="/app/orientation"
+            className="inline-flex rounded-full border border-stone-700 px-5 py-3 font-medium text-stone-100 transition hover:border-stone-500"
+          >
+            Start orientation
+          </Link>
+          <Link
+            href="/app/today"
+            className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
+          >
+            Open tonight’s session
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">

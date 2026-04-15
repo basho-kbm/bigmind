@@ -40,12 +40,10 @@ export default async function OrientationPage() {
           </p>
         </div>
         <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Current state</p>
-          <h3 className="mt-3 text-xl font-semibold">{billing.isSubscribed ? "Unlocked" : "Ready to unlock"}</h3>
+          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Current phase</p>
+          <h3 className="mt-3 text-xl font-semibold">Free nightly loop</h3>
           <p className="mt-3 text-sm text-stone-300">
-            {billing.isSubscribed
-              ? "Your subscription is active, so the next step is using Today as your nightly reset ritual."
-              : "Your shell is live. Subscribe to unlock the actual sleep-focused practice surfaces."}
+            The next step is making Tonight’s session feel genuinely useful, then earning a return tomorrow night.
           </p>
         </div>
       </section>

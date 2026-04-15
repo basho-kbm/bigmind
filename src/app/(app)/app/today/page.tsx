@@ -21,7 +21,9 @@ export default function TodayPage() {
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s recommendation</p>
             <h3 className="mt-3 text-2xl font-semibold">{session.spokenTrack.title}</h3>
-            <p className="mt-2 text-sm text-stone-500">{session.dateLabel} · {session.defaultLengthMinutes} minutes</p>
+            <p className="mt-2 text-sm text-stone-500">
+              {session.dateLabel} · {session.defaultLengthMinutes} minutes
+            </p>
             <p className="mt-4 text-sm leading-6 text-stone-300">{session.spokenTrack.summary}</p>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
               <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
@@ -37,7 +39,9 @@ export default function TodayPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Soundscape</p>
                 <p className="mt-2 text-sm font-medium text-stone-100">{session.soundscape.title}</p>
                 <p className="mt-2 text-sm text-stone-300">{session.soundscape.description}</p>
-                <p className="mt-3 text-xs text-stone-500">Texture: {session.soundscape.texture.join(" · ")}</p>
+                <p className="mt-3 text-xs text-stone-500">
+                  Texture: {session.soundscape.texture.join(" · ")}
+                </p>
               </div>
             </div>
             <div className="mt-6 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
@@ -58,9 +62,15 @@ export default function TodayPage() {
         <div className="space-y-4">
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <SleepConfigPanel
+              dateKey={session.dateKey}
+              dateLabel={session.dateLabel}
               defaultFocus={session.spokenTrack.focus}
               defaultSound={session.soundscape.key}
               defaultLength={String(session.defaultLengthMinutes)}
+              spokenTitle={session.spokenTrack.title}
+              openingLine={session.spokenTrack.openingLine}
+              structure={session.spokenTrack.structure}
+              soundscapeTitle={session.soundscape.title}
             />
           </div>
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
