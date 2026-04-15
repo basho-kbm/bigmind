@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { getDailySleepSession } from "@/lib/daily-content";
+import { getDailySleepLibrary, getDailySleepSessionFromLibrary } from "@/lib/daily-content";
 import {
   SLEEP_SESSION_COOKIE_NAME,
   parseSleepSessionState,
@@ -9,7 +9,8 @@ import {
 import { SleepConfigPanel } from "./SleepConfigPanel";
 
 export default async function TodayPage() {
-  const session = getDailySleepSession();
+  const library = await getDailySleepLibrary();
+  const session = getDailySleepSessionFromLibrary(library);
   const cookieStore = await cookies();
   const lastSession = parseSleepSessionState(cookieStore.get(SLEEP_SESSION_COOKIE_NAME)?.value ?? null);
 
@@ -19,7 +20,7 @@ export default async function TodayPage() {
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">BigMind Sleep</p>
         <h2 className="text-3xl font-semibold tracking-tight">Tonight’s daily sleep session</h2>
         <p className="max-w-2xl text-stone-300">
-          A simple nightly practice that blends gentle guidance, Zen-inspired teaching, and a
+          A simple nightly practice that blends gentle guidance, Zen-inspired guidance, and a
           refreshed soundscape to make it easier to fall asleep without forcing it.
         </p>
       </section>
@@ -85,6 +86,8 @@ export default async function TodayPage() {
               rememberedSound={lastSession?.sound}
               rememberedLength={lastSession ? String(lastSession.lengthMinutes) : undefined}
               initialLastSession={lastSession}
+              dailySpokenTracksByFocus={library.spokenTracksByFocus}
+              dailySoundscapesByKey={library.soundscapesByKey}
               spokenTitle={session.spokenTrack.title}
               openingLine={session.spokenTrack.openingLine}
               structure={session.spokenTrack.structure}
@@ -94,8 +97,8 @@ export default async function TodayPage() {
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Daily refresh rule</p>
             <p className="mt-4 text-sm text-stone-300">
-              Spoken guidance and soundscape recommendations refresh daily so BigMind feels alive,
-              current, and worth returning to tomorrow night.
+              Each focus track and soundscape family now has a daily refresh path so the sleep
+              experience can stay fresh instead of pulling from a static session pool.
             </p>
           </div>
         </div>

@@ -12,6 +12,8 @@ const serverEnvSchema = z.object({
   VERCEL_ORG_ID: z.string().min(1).optional(),
   SUPABASE_PROJECT_REF: z.string().min(1).optional(),
   STRIPE_PRICE_ID: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).optional(),
 });
 
 export const env = serverEnvSchema.parse({
@@ -26,6 +28,8 @@ export const env = serverEnvSchema.parse({
   VERCEL_ORG_ID: process.env.VERCEL_ORG_ID,
   SUPABASE_PROJECT_REF: process.env.SUPABASE_PROJECT_REF,
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: process.env.OPENAI_MODEL,
 });
 
 export type ServerEnv = typeof env;

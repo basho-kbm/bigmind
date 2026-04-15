@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { SoundscapeKey, SleepFocusKey } from "@/lib/daily-content";
+import type {
+  DailySoundscape,
+  DailySpokenTrack,
+  SoundscapeKey,
+  SleepFocusKey,
+} from "@/lib/daily-content";
 import {
   SLEEP_SESSION_COOKIE_NAME,
   type PersistedSleepSessionState,
@@ -120,6 +125,8 @@ type SleepConfigPanelProps = {
   rememberedSound?: SoundscapeKey;
   rememberedLength?: string;
   initialLastSession?: PersistedSleepSessionState | null;
+  dailySpokenTracksByFocus: Record<SleepFocusKey, DailySpokenTrack>;
+  dailySoundscapesByKey: Record<SoundscapeKey, DailySoundscape>;
   spokenTitle: string;
   openingLine: string;
   structure: string[];
@@ -187,6 +194,8 @@ export function SleepConfigPanel({
   rememberedSound,
   rememberedLength,
   initialLastSession = null,
+  dailySpokenTracksByFocus,
+  dailySoundscapesByKey,
   spokenTitle,
   openingLine,
   structure,
@@ -213,19 +222,35 @@ export function SleepConfigPanel({
   const recommendedSoundLabel =
     soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
 
+  const selectedTrack = dailySpokenTracksByFocus[focus];
+  const selectedSoundscape = dailySoundscapesByKey[sound];
+
   const sessionContent = useMemo(() => {
     const fallback = fallbackFocusContent[focus];
-    const useRecommendedTrack = focus === defaultFocus;
+    const track = selectedTrack ?? {
+      title: focus === defaultFocus ? spokenTitle : fallback.title,
+      openingLine: focus === defaultFocus ? openingLine : fallback.openingLine,
+      structure: focus === defaultFocus ? structure : fallback.structure,
+    };
 
     return {
-      title: useRecommendedTrack ? spokenTitle : fallback.title,
+      title: track.title,
       prompts: [
-        useRecommendedTrack ? openingLine : fallback.openingLine,
-        ...(useRecommendedTrack ? structure : fallback.structure),
-        `Let ${soundLabel.toLowerCase()} carry the rest of the night without pressure.`,
+        track.openingLine,
+        ...track.structure,
+        `Let ${selectedSoundscape?.title.toLowerCase() ?? soundLabel.toLowerCase()} carry the rest of the night without pressure.`,
       ],
     };
-  }, [defaultFocus, focus, openingLine, soundLabel, spokenTitle, structure]);
+  }, [
+    defaultFocus,
+    focus,
+    openingLine,
+    selectedSoundscape?.title,
+    selectedTrack,
+    soundLabel,
+    spokenTitle,
+    structure,
+  ]);
 
   const progressPercent = Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100);
   const currentPromptIndex = Math.min(
