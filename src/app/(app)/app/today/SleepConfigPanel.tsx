@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type {
   DailySoundscape,
@@ -12,6 +12,8 @@ import {
   SLEEP_SESSION_COOKIE_NAME,
   type PersistedSleepSessionState,
 } from "@/lib/sleep-session-state";
+
+import { recordSleepSessionCompletion } from "./actions";
 
 const focusOptions = [
   { value: "body_scan", label: "Body scan" },
@@ -211,6 +213,9 @@ export function SleepConfigPanel({
   const [speechAvailable, setSpeechAvailable] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
+  const [startedAt, setStartedAt] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "local-only">("idle");
+  const [isPending, startTransition] = useTransition();
   const spokenPhaseRef = useRef<number | null>(null);
 
   const totalSeconds = Math.max(60, Number(length) * 60);
@@ -335,6 +340,8 @@ export function SleepConfigPanel({
     setFocus(nextFocus);
     setSound(nextSound);
     setLength(nextLength);
+    setStartedAt(new Date().toISOString());
+    setSaveState("idle");
     setRemainingSeconds(Math.max(60, Number(nextLength) * 60));
     setIsPaused(false);
     setView("active");
@@ -370,10 +377,23 @@ export function SleepConfigPanel({
     setLastSession(record);
     setView("complete");
     setIsPaused(false);
+    setSaveState("saving");
+
+    startTransition(async () => {
+      const result = await recordSleepSessionCompletion({
+        ...record,
+        startedAt,
+        speechEnabled,
+      });
+
+      setSaveState(result.ok ? "saved" : "local-only");
+    });
   }
 
   function handleReset() {
     spokenPhaseRef.current = null;
+    setStartedAt(null);
+    setSaveState("idle");
     setView("config");
     setShowCustomization(false);
     setFocus(lastSession?.focus ?? rememberedFocus ?? defaultFocus);
@@ -568,6 +588,16 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4 text-sm text-stone-300">
             Completed {focusLabel.toLowerCase()} with {soundLabel.toLowerCase()} for {length} minutes on {dateLabel}.
+          </div>
+
+          <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4 text-xs text-stone-300">
+            {saveState === "saved"
+              ? "Saved to your account so return behavior can be tracked across sessions."
+              : saveState === "local-only"
+                ? "Saved on this device. Account-level session tracking is not active yet."
+                : saveState === "saving" || isPending
+                  ? "Saving this completion to your account..."
+                  : "This completion is being saved to your account."}
           </div>
 
           <div className="flex flex-wrap gap-3">

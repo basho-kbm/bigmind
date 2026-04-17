@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 
+import { requireUser } from "@/lib/auth";
 import { getDailySleepLibrary, getDailySleepSessionFromLibrary } from "@/lib/daily-content";
+import { getLatestSleepSession } from "@/lib/sleep-sessions";
 import {
   SLEEP_SESSION_COOKIE_NAME,
   parseSleepSessionState,
@@ -9,10 +11,13 @@ import {
 import { SleepConfigPanel } from "./SleepConfigPanel";
 
 export default async function TodayPage() {
+  const user = await requireUser();
   const library = await getDailySleepLibrary();
   const session = getDailySleepSessionFromLibrary(library);
   const cookieStore = await cookies();
-  const lastSession = parseSleepSessionState(cookieStore.get(SLEEP_SESSION_COOKIE_NAME)?.value ?? null);
+  const cookieLastSession = parseSleepSessionState(cookieStore.get(SLEEP_SESSION_COOKIE_NAME)?.value ?? null);
+  const databaseLastSession = await getLatestSleepSession(user.id);
+  const lastSession = databaseLastSession ?? cookieLastSession;
 
   return (
     <div className="space-y-8">

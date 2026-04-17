@@ -48,6 +48,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      sleep_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          date_key: string;
+          date_label: string;
+          focus: string;
+          focus_label: string;
+          sound: string;
+          sound_label: string;
+          length_minutes: number;
+          speech_enabled: boolean;
+          started_at: string | null;
+          completed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          date_key: string;
+          date_label: string;
+          focus: string;
+          focus_label: string;
+          sound: string;
+          sound_label: string;
+          length_minutes: number;
+          speech_enabled?: boolean;
+          started_at?: string | null;
+          completed_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          date_key?: string;
+          date_label?: string;
+          focus?: string;
+          focus_label?: string;
+          sound?: string;
+          sound_label?: string;
+          length_minutes?: number;
+          speech_enabled?: boolean;
+          started_at?: string | null;
+          completed_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
