@@ -2,10 +2,19 @@ import Link from "next/link";
 
 import { appConfig } from "@/lib/config";
 
-const launchChecklist = [
-  "Make the free BigMind Sleep session genuinely useful.",
-  "Keep signup light: Supabase auth, simple profile, clean entry into Today.",
-  "Prepare for Phase 2: email list growth, segmentation, and affiliate readiness.",
+const howItWorks = [
+  {
+    title: "Start with the easiest path",
+    description: "Open tonight’s recommended session immediately, or customize the focus, soundscape, and length if you want more control.",
+  },
+  {
+    title: "Settle into calmer guidance",
+    description: "Follow a simple bedtime flow designed to lower mental friction instead of giving you one more thing to do right.",
+  },
+  {
+    title: "Make tomorrow night easier",
+    description: "BigMind keeps the return path more continuous so the habit can feel alive instead of reset every time.",
+  },
 ];
 
 const sleepGuides = [
@@ -63,44 +72,33 @@ export default function MarketingHome() {
 
         <section className="grid gap-6 rounded-3xl border border-stone-800 bg-stone-900/60 p-8 md:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-4">
-            <h2 className="text-2xl font-medium">Phase 1 foundation is live</h2>
+            <h2 className="text-2xl font-medium">A calmer bedtime without adding more pressure</h2>
             <p className="text-stone-300">
-              Next.js is up, env validation is wired, Supabase auth is in place, and this repo is
-              now pointed at a free, sleep-first BigMind experience instead of a paid-first
-              subscription launch.
+              BigMind Sleep is built for nights when you want a simpler way to settle your mind,
+              ease into sleep, and come back tomorrow without feeling like you are starting from
+              zero again.
             </p>
           </div>
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-5">
-            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Phase 1 goals</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">What you get tonight</p>
             <ul className="mt-4 space-y-3 text-sm text-stone-200">
-              <li>
-                
-                &bull; Free web app focused on sleep
-              </li>
-              <li>
-                
-                &bull; Friction-light signup and entry
-              </li>
-              <li>
-                
-                &bull; One genuinely helpful nightly session
-              </li>
-              <li>
-                
-                &bull; Clean foundation for email + affiliate Phase 2
-              </li>
+              <li>&bull; One recommended session you can start fast</li>
+              <li>&bull; Gentle Zen-inspired guidance for beginners</li>
+              <li>&bull; Simple customization when you want it</li>
+              <li>&bull; A better return path tomorrow night</li>
             </ul>
           </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">
-          {launchChecklist.map((item, index) => (
+          {howItWorks.map((item) => (
             <div
-              key={item}
+              key={item.title}
               className="rounded-2xl border border-stone-800 bg-stone-900/40 p-6"
             >
-              <p className="text-sm text-emerald-200">Step 0{index + 1}</p>
-              <p className="mt-3 text-base text-stone-100">{item}</p>
+              <p className="text-sm text-emerald-200">How it works</p>
+              <p className="mt-3 text-base font-medium text-stone-100">{item.title}</p>
+              <p className="mt-3 text-sm leading-6 text-stone-300">{item.description}</p>
             </div>
           ))}
         </section>
@@ -110,7 +108,7 @@ export default function MarketingHome() {
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Sleep guides</p>
             <h2 className="text-2xl font-medium">Start with the simplest help first</h2>
             <p className="max-w-3xl text-stone-300">
-              Two beginner-friendly guides are now live to help new visitors understand the
+              Three beginner-friendly guides are now live to help new visitors understand the
               product promise and move into BigMind Sleep with less friction.
             </p>
           </div>
