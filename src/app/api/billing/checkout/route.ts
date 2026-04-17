@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { ensureStripeCustomer } from "@/lib/billing";
-import { env } from "@/lib/env/server";
-import { stripe } from "@/lib/stripe/server";
+import { getServerEnv } from "@/lib/env/server";
+import { getStripeClient } from "@/lib/stripe/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
+  const env = getServerEnv();
+  const stripe = getStripeClient();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

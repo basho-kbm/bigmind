@@ -1,4 +1,4 @@
-import { env } from "@/lib/env/server";
+import { getServerEnv } from "@/lib/env/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export type SleepFocusKey =
@@ -86,7 +86,6 @@ type GeneratedSoundscapePayload = {
 };
 
 const EASTERN_TIME_ZONE = "America/New_York";
-const OPENAI_MODEL = env.OPENAI_MODEL ?? "gpt-4.1-mini";
 const RECOMMENDATION_NOTE_LONG =
   "Tonight’s recommendation keeps a little more guidance up front, then gets out of the way so sleep can happen naturally.";
 const RECOMMENDATION_NOTE_SHORT =
@@ -432,9 +431,13 @@ async function upsertStoredRow(row: Record<string, unknown>) {
 }
 
 async function callOpenAIJson(systemPrompt: string, userPrompt: string) {
+  const env = getServerEnv();
+
   if (!env.OPENAI_API_KEY) {
     return null;
   }
+
+  const openAiModel = env.OPENAI_MODEL ?? "gpt-4.1-mini";
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -443,7 +446,7 @@ async function callOpenAIJson(systemPrompt: string, userPrompt: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: openAiModel,
       temperature: 0.9,
       response_format: { type: "json_object" },
       messages: [
@@ -477,6 +480,7 @@ async function callOpenAIJson(systemPrompt: string, userPrompt: string) {
 }
 
 async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
+  const openAiModel = getServerEnv().OPENAI_MODEL ?? "gpt-4.1-mini";
   const fallback = fallbackSpokenTracks[focus];
 
   try {
@@ -530,7 +534,7 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
       mood_tags: result.moodTags ?? [],
       primary_angle: result.primaryTeachingAngle ?? null,
       raw_payload: result,
-      llm_model: OPENAI_MODEL,
+      llm_model: openAiModel,
     });
 
     return track;
@@ -540,6 +544,7 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
 }
 
 async function generateSoundscape(dateKey: string, key: SoundscapeKey) {
+  const openAiModel = getServerEnv().OPENAI_MODEL ?? "gpt-4.1-mini";
   const fallback = fallbackSoundscapes[key];
 
   try {
@@ -585,7 +590,7 @@ async function generateSoundscape(dateKey: string, key: SoundscapeKey) {
       mood_tags: result.moodTags ?? [],
       variation_profile: result.variationProfile ?? null,
       raw_payload: result,
-      llm_model: OPENAI_MODEL,
+      llm_model: openAiModel,
     });
 
     return soundscape;
@@ -595,6 +600,7 @@ async function generateSoundscape(dateKey: string, key: SoundscapeKey) {
 }
 
 export async function getDailySleepLibrary(date = new Date()): Promise<DailySleepLibrary> {
+  const env = getServerEnv();
   const fallbackLibrary = buildFallbackLibrary(date);
   const { dateKey, dateLabel } = fallbackLibrary;
   const storedRows = await fetchStoredRows(dateKey);

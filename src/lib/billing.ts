@@ -2,7 +2,7 @@ import { cache } from "react";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { stripe } from "@/lib/stripe/server";
+import { getStripeClient } from "@/lib/stripe/server";
 
 const ACTIVE_STATUSES = new Set(["trialing", "active"]);
 
@@ -93,6 +93,7 @@ export async function ensureStripeCustomer(params: {
   email: string | null | undefined;
   fullName?: string | null;
 }) {
+  const stripe = getStripeClient();
   const existing = await ensureProfile({
     userId: params.userId,
     email: params.email,
@@ -131,6 +132,7 @@ export async function ensureStripeCustomer(params: {
 }
 
 export async function syncSubscriptionFromStripe(subscriptionId: string) {
+  const stripe = getStripeClient();
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const userId = subscription.metadata.supabase_user_id || subscription.items.data[0]?.price.metadata?.supabase_user_id;
   const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id;

@@ -16,20 +16,22 @@ const serverEnvSchema = z.object({
   OPENAI_MODEL: z.string().min(1).optional(),
 });
 
-export const env = serverEnvSchema.parse({
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-  RESEND_API_KEY: process.env.RESEND_API_KEY,
-  VERCEL_TOKEN: process.env.VERCEL_TOKEN,
-  VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
-  VERCEL_ORG_ID: process.env.VERCEL_ORG_ID,
-  SUPABASE_PROJECT_REF: process.env.SUPABASE_PROJECT_REF,
-  STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-  OPENAI_MODEL: process.env.OPENAI_MODEL,
-});
+export function getServerEnv() {
+  return serverEnvSchema.parse({
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    VERCEL_TOKEN: process.env.VERCEL_TOKEN,
+    VERCEL_PROJECT_ID: process.env.VERCEL_PROJECT_ID,
+    VERCEL_ORG_ID: process.env.VERCEL_ORG_ID,
+    SUPABASE_PROJECT_REF: process.env.SUPABASE_PROJECT_REF,
+    STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_MODEL: process.env.OPENAI_MODEL,
+  });
+}
 
-export type ServerEnv = typeof env;
+export type ServerEnv = ReturnType<typeof getServerEnv>;

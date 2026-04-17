@@ -1,10 +1,12 @@
 import Stripe from "stripe";
 
 import { markSubscriptionCanceled, syncSubscriptionFromStripe } from "@/lib/billing";
-import { env } from "@/lib/env/server";
-import { stripe } from "@/lib/stripe/server";
+import { getServerEnv } from "@/lib/env/server";
+import { getStripeClient } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
+  const env = getServerEnv();
+  const stripe = getStripeClient();
   const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
