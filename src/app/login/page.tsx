@@ -27,8 +27,8 @@ export default async function LoginPage() {
         <LoginForm />
 
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-5 text-sm text-stone-300">
-          Planned next: Google sign-in, paid onboarding, and subscriber gating after the auth loop
-          is fully stable.
+          BigMind keeps the first step simple right now: one email, one magic link, one calmer way
+          into tonight’s session.
         </div>
 
         <Link href="/" className="text-sm text-emerald-200 underline underline-offset-4">

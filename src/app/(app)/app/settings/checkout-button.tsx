@@ -36,7 +36,7 @@ export function CheckoutButton({ disabled }: { disabled?: boolean }) {
         disabled={pending || disabled}
         className="rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Opening checkout..." : "Start subscription"}
+        {pending ? "Opening checkout..." : "Open checkout"}
       </button>
       {error ? (
         <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">

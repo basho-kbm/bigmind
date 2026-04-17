@@ -31,10 +31,10 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <section className="space-y-3">
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Settings</p>
-        <h2 className="text-3xl font-semibold tracking-tight">Account and phase status</h2>
+        <h2 className="text-3xl font-semibold tracking-tight">Account and preferences</h2>
         <p className="max-w-2xl text-stone-300">
-          BigMind Phase 1 is free. Billing infrastructure can stay in the background for now while
-          the product focuses on one real nightly sleep session.
+          BigMind is focused on a simple free nightly sleep loop right now. Keep your profile ready
+          for tonight, and let billing stay in the background until it is actually needed.
         </p>
       </section>
 
@@ -50,13 +50,13 @@ export default async function SettingsPage() {
         </div>
 
         <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Billing state</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Membership status</p>
           <p className={`mt-4 text-2xl font-semibold ${statusTone[status] ?? "text-stone-50"}`}>
             {status.replaceAll("_", " ")}
           </p>
           <p className="mt-3 text-sm text-stone-300">
-            This exists for later owned-product monetization. It is not required to use BigMind
-            Sleep in Phase 1.
+            This stays in the background for now. BigMind Sleep is currently free while the core
+            nightly loop is being proven.
           </p>
         </div>
       </section>

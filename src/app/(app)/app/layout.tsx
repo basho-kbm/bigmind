@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <aside className="flex flex-col rounded-3xl border border-stone-800 bg-stone-900/60 p-6">
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">BigMind</p>
-            <h1 className="text-2xl font-semibold">Roshi-bot operator shell</h1>
+            <h1 className="text-2xl font-semibold">BigMind Sleep</h1>
             <p className="text-sm text-stone-300">Signed in as {user.email ?? "unknown user"}</p>
           </div>
           <nav className="mt-8 space-y-2">

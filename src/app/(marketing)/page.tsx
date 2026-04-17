@@ -53,10 +53,10 @@ export default function MarketingHome() {
               Start BigMind Sleep (free)
             </Link>
             <Link
-              href="/app"
+              href="/sleep-meditation-for-beginners"
               className="rounded-full border border-stone-700 px-5 py-3 font-medium text-stone-100 transition hover:border-stone-500"
             >
-              View operator shell
+              See how BigMind works
             </Link>
           </div>
         </section>
