@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAppOrigin } from "@/lib/app-origin";
 import { ensureStripeCustomer } from "@/lib/billing";
 import { getServerEnv } from "@/lib/env/server";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Stripe price is not configured." }, { status: 500 });
   }
 
-  const origin = request.nextUrl.origin;
+  const origin = getAppOrigin(request.headers);
   const customerId = await ensureStripeCustomer({
     userId: user.id,
     email: user.email,

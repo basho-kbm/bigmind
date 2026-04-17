@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { getAppOrigin } from "@/lib/app-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const loginSchema = z.object({
@@ -32,7 +33,7 @@ export async function sendMagicLink(
 
   const supabase = await createSupabaseServerClient();
   const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const origin = getAppOrigin(headerStore);
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,

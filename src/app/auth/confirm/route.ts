@@ -1,6 +1,7 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAppOrigin } from "@/lib/app-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const validOtpTypes = new Set<EmailOtpType>([
@@ -14,6 +15,7 @@ const validOtpTypes = new Set<EmailOtpType>([
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
+  const origin = getAppOrigin(request.headers);
   const tokenHash = requestUrl.searchParams.get("token_hash");
   const type = requestUrl.searchParams.get("type");
   const next = requestUrl.searchParams.get("next") ?? "/app";
@@ -26,9 +28,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+      return NextResponse.redirect(new URL(next, origin));
     }
   }
 
-  return NextResponse.redirect(new URL("/login?error=auth-confirmation-failed", requestUrl.origin));
+  return NextResponse.redirect(new URL("/login?error=auth-confirmation-failed", origin));
 }
