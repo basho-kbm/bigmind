@@ -25,8 +25,7 @@ export default async function TodayPage() {
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">BigMind Sleep</p>
         <h2 className="text-3xl font-semibold tracking-tight">Tonight’s daily sleep session</h2>
         <p className="max-w-2xl text-stone-300">
-          A simple nightly practice that blends gentle guidance, Zen-inspired guidance, and a
-          refreshed soundscape to make it easier to fall asleep without forcing it.
+          Start tonight&apos;s session fast. Customize only if you want to.
         </p>
       </section>
 

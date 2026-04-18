@@ -207,35 +207,31 @@ export function SleepConfigPanel({
   const recommendedSoundLabel =
     soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
 
-  const selectedTrack = dailySpokenTracksByFocus[focus];
-  const selectedSoundscape = dailySoundscapesByKey[sound];
+  const buildSessionContent = useCallback(
+    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey) => {
+      const fallback = fallbackFocusContent[nextFocus];
+      const nextTrack = dailySpokenTracksByFocus[nextFocus] ?? {
+        title: nextFocus === defaultFocus ? spokenTitle : fallback.title,
+        openingLine: nextFocus === defaultFocus ? openingLine : fallback.openingLine,
+        structure: nextFocus === defaultFocus ? structure : fallback.structure,
+      };
+      const nextSoundLabel =
+        soundOptions.find((option) => option.value === nextSound)?.label ?? "Ocean";
+      const nextSoundscapeTitle = dailySoundscapesByKey[nextSound]?.title;
 
-  const sessionContent = useMemo(() => {
-    const fallback = fallbackFocusContent[focus];
-    const track = selectedTrack ?? {
-      title: focus === defaultFocus ? spokenTitle : fallback.title,
-      openingLine: focus === defaultFocus ? openingLine : fallback.openingLine,
-      structure: focus === defaultFocus ? structure : fallback.structure,
-    };
+      return {
+        title: nextTrack.title,
+        prompts: [
+          nextTrack.openingLine,
+          ...nextTrack.structure,
+          `Let ${nextSoundscapeTitle?.toLowerCase() ?? nextSoundLabel.toLowerCase()} carry the rest of the night without pressure.`,
+        ],
+      };
+    },
+    [dailySoundscapesByKey, dailySpokenTracksByFocus, defaultFocus, openingLine, spokenTitle, structure],
+  );
 
-    return {
-      title: track.title,
-      prompts: [
-        track.openingLine,
-        ...track.structure,
-        `Let ${selectedSoundscape?.title.toLowerCase() ?? soundLabel.toLowerCase()} carry the rest of the night without pressure.`,
-      ],
-    };
-  }, [
-    defaultFocus,
-    focus,
-    openingLine,
-    selectedSoundscape?.title,
-    selectedTrack,
-    soundLabel,
-    spokenTitle,
-    structure,
-  ]);
+  const sessionContent = useMemo(() => buildSessionContent(focus, sound), [buildSessionContent, focus, sound]);
 
   const progressPercent = Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100);
   const currentPromptIndex = Math.min(
@@ -243,6 +239,24 @@ export function SleepConfigPanel({
     Math.floor(((totalSeconds - remainingSeconds) / totalSeconds) * sessionContent.prompts.length),
   );
   const currentPrompt = sessionContent.prompts[currentPromptIndex] ?? sessionContent.prompts[0];
+
+  const speakPrompt = useCallback(
+    (prompt: string) => {
+      if (!speechAvailable || !speechEnabled || typeof window === "undefined") {
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(prompt);
+      utterance.rate = 0.9;
+      utterance.pitch = 0.95;
+      utterance.volume = 0.85;
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [speechAvailable, speechEnabled],
+  );
 
   const handleComplete = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -320,25 +334,19 @@ export function SleepConfigPanel({
 
     spokenPhaseRef.current = currentPromptIndex;
 
-    if (!speechAvailable || !speechEnabled || typeof window === "undefined") {
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(currentPrompt);
-    utterance.rate = 0.9;
-    utterance.pitch = 0.95;
-    utterance.volume = 0.85;
-
-    window.speechSynthesis.speak(utterance);
-  }, [currentPrompt, currentPromptIndex, speechAvailable, speechEnabled, view]);
+    speakPrompt(currentPrompt);
+  }, [currentPrompt, currentPromptIndex, speakPrompt, view]);
 
   useEffect(() => {
     if (!speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
+      return;
     }
-  }, [speechEnabled]);
+
+    if (speechEnabled && view === "active") {
+      window.setTimeout(() => speakPrompt(currentPrompt), 0);
+    }
+  }, [currentPrompt, speakPrompt, speechEnabled, view]);
 
   useEffect(() => {
     return () => {
@@ -349,7 +357,15 @@ export function SleepConfigPanel({
   }, []);
 
   function beginSession(nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) {
-    spokenPhaseRef.current = null;
+    const nextContent = buildSessionContent(nextFocus, nextSound);
+
+    if (speechAvailable && speechEnabled) {
+      spokenPhaseRef.current = 0;
+      speakPrompt(nextContent.prompts[0] ?? "");
+    } else {
+      spokenPhaseRef.current = null;
+    }
+
     setFocus(nextFocus);
     setSound(nextSound);
     setLength(nextLength);
@@ -367,6 +383,24 @@ export function SleepConfigPanel({
   function handleStartCustom(event: React.FormEvent) {
     event.preventDefault();
     beginSession(focus, sound, length);
+  }
+
+  function handlePauseToggle() {
+    if (view !== "active") {
+      return;
+    }
+
+    if (isPaused) {
+      setIsPaused(false);
+      window.setTimeout(() => speakPrompt(currentPrompt), 0);
+      return;
+    }
+
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    setIsPaused(true);
   }
 
   function handleReset() {
@@ -388,13 +422,6 @@ export function SleepConfigPanel({
     <div className="space-y-4">
       {view === "config" ? (
         <>
-          <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s fastest path</p>
-            <p className="text-sm text-stone-300">
-              Start the recommended session immediately. Customize only if you want to.
-            </p>
-          </div>
-
           <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Recommended tonight</p>
@@ -542,7 +569,7 @@ export function SleepConfigPanel({
           <div className="grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
-              onClick={() => setIsPaused((current) => !current)}
+              onClick={handlePauseToggle}
               className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500 sm:w-auto"
             >
               {isPaused ? "Resume" : "Pause"}
