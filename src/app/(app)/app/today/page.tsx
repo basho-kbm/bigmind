@@ -64,7 +64,7 @@ export default async function TodayPage() {
               </div>
             </div>
             <div className="mt-6 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
-              Roshi blend: {session.roshiBlend}. {session.recommendationNote}
+              Voice direction: {session.roshiBlend}. {session.recommendationNote}
             </div>
           </div>
 

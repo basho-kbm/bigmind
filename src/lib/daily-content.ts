@@ -666,7 +666,7 @@ export function getDailySleepSessionFromLibrary(
   return {
     dateKey: library.dateKey,
     dateLabel: library.dateLabel,
-    roshiBlend: "40% Shunryu Suzuki, 40% Alan Watts, 20% Ram Dass inspiration",
+    roshiBlend: "Zen-inspired, beginner-friendly, and calm enough for bedtime",
     spokenTrack,
     soundscape,
     defaultLengthMinutes,

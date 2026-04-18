@@ -190,7 +190,7 @@ export function SleepConfigPanel({
   const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(rememberedLength ?? defaultLength) * 60);
-  const [speechEnabled, setSpeechEnabled] = useState(false);
+  const [speechEnabled] = useState(true);
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "local-only">("idle");
@@ -440,18 +440,12 @@ export function SleepConfigPanel({
             </button>
 
             {speechAvailable ? (
-              <label className="flex items-center gap-3 rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
-                <input
-                  type="checkbox"
-                  checked={speechEnabled}
-                  onChange={(event) => setSpeechEnabled(event.target.checked)}
-                  className="h-4 w-4 rounded border-stone-600 bg-stone-950 text-emerald-400"
-                />
-                <span>Use browser-spoken guidance (beta)</span>
-              </label>
+              <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
+                Voice guidance is part of tonight&apos;s session.
+              </div>
             ) : (
               <p className="text-xs text-stone-400">
-                Browser-spoken guidance is unavailable here, so the session runs with on-screen prompts and a timer.
+                Voice guidance is unavailable in this browser right now, so the session falls back to on-screen guidance and a timer.
               </p>
             )}
           </div>
@@ -537,7 +531,7 @@ export function SleepConfigPanel({
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Session live</p>
             <h3 className="text-xl font-semibold text-stone-50">{sessionContent.title}</h3>
             <p className="text-sm text-stone-300">
-              {focusLabel} · {soundLabel} · {length} minutes{speechEnabled && speechAvailable ? " · spoken guidance on" : ""}
+              {focusLabel} · {soundLabel} · {length} minutes{speechEnabled && speechAvailable ? " · voice guidance on" : ""}
             </p>
           </div>
 
