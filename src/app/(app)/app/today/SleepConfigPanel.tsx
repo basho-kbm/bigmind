@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type {
   DailySoundscape,
@@ -132,7 +132,6 @@ type SleepConfigPanelProps = {
   spokenTitle: string;
   openingLine: string;
   structure: string[];
-  soundscapeTitle: string;
 };
 
 const LAST_SESSION_STORAGE_KEY = "bigmind:last-sleep-session";
@@ -160,24 +159,6 @@ function persistSleepSessionCookie(record: PersistedSleepSessionState) {
   document.cookie = `${SLEEP_SESSION_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(record))}; path=/; max-age=${60 * 60 * 24 * 30}; samesite=lax`;
 }
 
-function readLastSession() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(LAST_SESSION_STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as PersistedSleepSessionState;
-  } catch {
-    return null;
-  }
-}
-
 function persistLastSession(record: PersistedSleepSessionState) {
   if (typeof window === "undefined") {
     return;
@@ -201,7 +182,6 @@ export function SleepConfigPanel({
   spokenTitle,
   openingLine,
   structure,
-  soundscapeTitle,
 }: SleepConfigPanelProps) {
   const [focus, setFocus] = useState(rememberedFocus ?? defaultFocus);
   const [sound, setSound] = useState(rememberedSound ?? defaultSound);
@@ -210,7 +190,6 @@ export function SleepConfigPanel({
   const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(rememberedLength ?? defaultLength) * 60);
-  const [speechAvailable, setSpeechAvailable] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const [startedAt, setStartedAt] = useState<string | null>(null);
@@ -219,6 +198,7 @@ export function SleepConfigPanel({
   const spokenPhaseRef = useRef<number | null>(null);
 
   const totalSeconds = Math.max(60, Number(length) * 60);
+  const speechAvailable = typeof window !== "undefined" && "speechSynthesis" in window;
 
   const focusLabel = focusOptions.find((option) => option.value === focus)?.label ?? "Body scan";
   const soundLabel = soundOptions.find((option) => option.value === sound)?.label ?? "Ocean";
@@ -264,17 +244,50 @@ export function SleepConfigPanel({
   );
   const currentPrompt = sessionContent.prompts[currentPromptIndex] ?? sessionContent.prompts[0];
 
-  useEffect(() => {
-    setSpeechAvailable(typeof window !== "undefined" && "speechSynthesis" in window);
-    setLastSession(readLastSession() ?? initialLastSession);
-  }, [initialLastSession]);
-
-  useEffect(() => {
-    if (view === "config") {
-      setRemainingSeconds(totalSeconds);
-      setIsPaused(false);
+  const handleComplete = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
-  }, [totalSeconds, view]);
+
+    const record: PersistedSleepSessionState = {
+      dateKey,
+      dateLabel,
+      focus,
+      focusLabel,
+      sound,
+      soundLabel,
+      lengthMinutes: Number(length),
+      completedAt: new Date().toISOString(),
+    };
+
+    persistLastSession(record);
+    persistSleepSessionCookie(record);
+    setLastSession(record);
+    setView("complete");
+    setIsPaused(false);
+    setSaveState("saving");
+
+    startTransition(async () => {
+      const result = await recordSleepSessionCompletion({
+        ...record,
+        startedAt,
+        speechEnabled,
+      });
+
+      setSaveState(result.ok ? "saved" : "local-only");
+    });
+  }, [
+    dateKey,
+    dateLabel,
+    focus,
+    focusLabel,
+    length,
+    sound,
+    soundLabel,
+    speechEnabled,
+    startedAt,
+    startTransition,
+  ]);
 
   useEffect(() => {
     if (view !== "active" || isPaused) {
@@ -282,19 +295,19 @@ export function SleepConfigPanel({
     }
 
     const intervalId = window.setInterval(() => {
-      setRemainingSeconds((current) => (current <= 1 ? 0 : current - 1));
+      setRemainingSeconds((current) => {
+        if (current <= 1) {
+          window.clearInterval(intervalId);
+          window.setTimeout(handleComplete, 0);
+          return 0;
+        }
+
+        return current - 1;
+      });
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [isPaused, view]);
-
-  useEffect(() => {
-    if (view !== "active" || remainingSeconds !== 0) {
-      return;
-    }
-
-    handleComplete();
-  }, [remainingSeconds, view]);
+  }, [handleComplete, isPaused, view]);
 
   useEffect(() => {
     if (view !== "active") {
@@ -354,40 +367,6 @@ export function SleepConfigPanel({
   function handleStartCustom(event: React.FormEvent) {
     event.preventDefault();
     beginSession(focus, sound, length);
-  }
-
-  function handleComplete() {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    const record: PersistedSleepSessionState = {
-      dateKey,
-      dateLabel,
-      focus,
-      focusLabel,
-      sound,
-      soundLabel,
-      lengthMinutes: Number(length),
-      completedAt: new Date().toISOString(),
-    };
-
-    persistLastSession(record);
-    persistSleepSessionCookie(record);
-    setLastSession(record);
-    setView("complete");
-    setIsPaused(false);
-    setSaveState("saving");
-
-    startTransition(async () => {
-      const result = await recordSleepSessionCompletion({
-        ...record,
-        startedAt,
-        speechEnabled,
-      });
-
-      setSaveState(result.ok ? "saved" : "local-only");
-    });
   }
 
   function handleReset() {
@@ -535,12 +514,19 @@ export function SleepConfigPanel({
             </p>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-stone-400">
-              <span>Progress</span>
-              <span>{formatSeconds(remainingSeconds)} remaining</span>
+          <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Time remaining</p>
+                <p className="mt-3 text-4xl font-semibold tracking-tight text-stone-50 sm:text-5xl">
+                  {formatSeconds(remainingSeconds)}
+                </p>
+              </div>
+              <p className="text-right text-xs uppercase tracking-[0.2em] text-stone-400">
+                {progressPercent}% complete
+              </p>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-stone-900">
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-stone-900">
               <div
                 className="h-full rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${Math.max(progressPercent, 4)}%` }}
@@ -550,21 +536,21 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Current guidance</p>
-            <p className="mt-3 text-base leading-7 text-stone-100">{currentPrompt}</p>
+            <p className="mt-3 text-base leading-7 text-stone-100 sm:text-lg sm:leading-8">{currentPrompt}</p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={() => setIsPaused((current) => !current)}
-              className="rounded-full border border-stone-700 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-stone-500"
+              className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500 sm:w-auto"
             >
               {isPaused ? "Resume" : "Pause"}
             </button>
             <button
               type="button"
               onClick={handleComplete}
-              className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
+              className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300 sm:w-auto"
             >
               Complete session
             </button>
@@ -600,11 +586,11 @@ export function SleepConfigPanel({
                   : "This completion is being saved to your account."}
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={handleReset}
-              className="rounded-full bg-emerald-400 px-4 py-2 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
+              className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300 sm:w-auto"
             >
               Start another session
             </button>
@@ -612,11 +598,6 @@ export function SleepConfigPanel({
         </div>
       ) : null}
 
-      {lastSession ? (
-        <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
-          Last completed: {lastSession.focusLabel} with {lastSession.soundLabel.toLowerCase()} for {lastSession.lengthMinutes} minutes on {formatCompletedAt(lastSession.completedAt)}.
-        </div>
-      ) : null}
     </div>
   );
 }

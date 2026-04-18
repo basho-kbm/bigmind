@@ -37,7 +37,7 @@ export default async function TodayPage() {
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-4">
+        <div className="order-2 space-y-4 md:order-1">
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s recommendation</p>
             <h3 className="mt-3 text-2xl font-semibold">{session.spokenTrack.title}</h3>
@@ -74,12 +74,12 @@ export default async function TodayPage() {
             <p className="mt-4 text-sm text-stone-300">
               Don’t optimize for intensity. Optimize for showing up tonight and wanting to return
               tomorrow. Let BigMind Sleep be a gentle container for practice, not another thing to
-              "do right."
+              &quot;do right.&quot;
             </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="order-1 space-y-4 md:order-2">
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <SleepConfigPanel
               dateKey={session.dateKey}
@@ -96,7 +96,6 @@ export default async function TodayPage() {
               spokenTitle={session.spokenTrack.title}
               openingLine={session.spokenTrack.openingLine}
               structure={session.spokenTrack.structure}
-              soundscapeTitle={session.soundscape.title}
             />
           </div>
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
