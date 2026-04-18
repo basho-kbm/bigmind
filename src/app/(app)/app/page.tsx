@@ -3,15 +3,18 @@ import Link from "next/link";
 const dashboardCards = [
   {
     title: "Today’s session",
-    description: "The critical path is making the nightly sleep session feel real, helpful, and worth returning to tomorrow.",
+    description:
+      "Start tonight’s guided sleep session with calm pacing, simple choices, and a clear path into rest.",
   },
   {
     title: "Journal",
-    description: "Journal is now a later-phase layer. It should come back only after the nightly loop earns trust.",
+    description:
+      "A lightweight reflection space is coming. For now, the focus stays on helping tonight feel calmer.",
   },
   {
     title: "Insights",
-    description: "Insights come later, after Today is generating real session behavior and return signals.",
+    description:
+      "As BigMind learns what helps you settle down, this is where your patterns and recommendations will appear.",
   },
 ];
 
@@ -19,24 +22,24 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <section className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Dashboard</p>
-        <h2 className="text-3xl font-semibold tracking-tight">BigMind Phase 1 is a free sleep-first loop.</h2>
+        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">BigMind Sleep</p>
+        <h2 className="text-3xl font-semibold tracking-tight">Tonight starts here.</h2>
         <p className="max-w-2xl text-stone-300">
-          The job right now is not unlocking billing. It is making one nightly session genuinely
-          useful from start to finish, then giving people a reason to come back tomorrow.
+          BigMind is built to help you wind down faster, stay with a calm guided session, and come
+          back tomorrow night without friction.
         </p>
         <div className="flex flex-wrap gap-4">
           <Link
             href="/app/orientation"
             className="inline-flex rounded-full border border-stone-700 px-5 py-3 font-medium text-stone-100 transition hover:border-stone-500"
           >
-            Start orientation
+            See how it works
           </Link>
           <Link
             href="/app/today"
             className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
           >
-            Open tonight’s session
+            Start tonight’s session
           </Link>
         </div>
       </section>

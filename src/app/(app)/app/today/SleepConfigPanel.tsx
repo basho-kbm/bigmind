@@ -510,7 +510,7 @@ export function SleepConfigPanel({
         <>
           <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
             <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Recommended tonight</p>
+              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Best for tonight</p>
               <h3 className="text-xl font-semibold text-stone-50">{spokenTitle}</h3>
               <p className="text-sm text-stone-300">
                 {recommendedFocusLabel} · {recommendedSoundLabel} · {defaultLength} minutes
@@ -522,16 +522,16 @@ export function SleepConfigPanel({
               onClick={handleStartRecommended}
               className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Start tonight&apos;s recommended session
+              Start now
             </button>
 
             {speechAvailable ? (
               <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
-                Voice guidance is part of tonight&apos;s session.
+                Voice guidance is included in tonight&apos;s session.
               </div>
             ) : (
               <p className="text-xs text-stone-400">
-                Voice guidance is unavailable in this browser right now, so the session falls back to on-screen guidance and a timer.
+                Voice guidance is unavailable in this browser right now, so the session will run with on-screen guidance and a timer.
               </p>
             )}
           </div>
@@ -539,7 +539,7 @@ export function SleepConfigPanel({
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
             {lastSession
               ? `Last completed: ${lastSession.focusLabel} with ${lastSession.soundLabel.toLowerCase()} for ${lastSession.lengthMinutes} minutes on ${formatCompletedAt(lastSession.completedAt)}.`
-              : `Once you finish a session, BigMind will remember your last completed setup and use it to make the return path feel more continuous.`}
+              : `BigMind remembers your last completed setup so starting again feels easier next time.`}
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
@@ -548,7 +548,7 @@ export function SleepConfigPanel({
               onClick={() => setShowCustomization((current) => !current)}
               className="flex w-full items-center justify-between text-left text-sm font-medium text-stone-100"
             >
-              <span>Customize tonight instead</span>
+              <span>Adjust tonight&apos;s session</span>
               <span className="text-stone-400">{showCustomization ? "Hide" : "Show"}</span>
             </button>
 
@@ -603,7 +603,7 @@ export function SleepConfigPanel({
                   type="submit"
                   className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
                 >
-                  Start custom session
+                  Start this session
                 </button>
               </form>
             ) : null}
@@ -614,7 +614,7 @@ export function SleepConfigPanel({
       {view === "active" ? (
         <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Session live</p>
+            <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Tonight&apos;s session</p>
             <h3 className="text-xl font-semibold text-stone-50">{sessionContent.title}</h3>
             <p className="text-sm text-stone-300">
               {focusLabel} · {soundLabel} · {length} minutes{speechEnabled && speechAvailable ? " · voice guidance on" : ""}
@@ -664,7 +664,7 @@ export function SleepConfigPanel({
           </div>
 
           <p className="text-xs text-stone-400">
-            The goal is not intensity. The goal is giving your attention a calmer place to land tonight.
+            Let this be easy. You do not need to do it perfectly.
           </p>
         </div>
       ) : null}
@@ -673,9 +673,9 @@ export function SleepConfigPanel({
         <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Session complete</p>
-            <h3 className="text-xl font-semibold text-stone-50">Nice. You showed up tonight.</h3>
+            <h3 className="text-xl font-semibold text-stone-50">You&apos;re done for tonight.</h3>
             <p className="text-sm text-stone-300">
-              Come back tomorrow night for a refreshed session. BigMind Sleep should feel alive, not static.
+              Come back tomorrow night for a fresh session.
             </p>
           </div>
 
@@ -685,12 +685,12 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4 text-xs text-stone-300">
             {saveState === "saved"
-              ? "Saved to your account so return behavior can be tracked across sessions."
+              ? "Saved to your account so picking up again feels smoother next time."
               : saveState === "local-only"
-                ? "Saved on this device. Account-level session tracking is not active yet."
+                ? "Saved on this device for now."
                 : saveState === "saving" || isPending
-                  ? "Saving this completion to your account..."
-                  : "This completion is being saved to your account."}
+                  ? "Saving your session..."
+                  : "Your session is being saved."}
           </div>
 
           <div className="grid gap-3 sm:flex sm:flex-wrap">

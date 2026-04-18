@@ -31,41 +31,40 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <section className="space-y-3">
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Settings</p>
-        <h2 className="text-3xl font-semibold tracking-tight">Account and preferences</h2>
+        <h2 className="text-3xl font-semibold tracking-tight">Account and sleep preferences</h2>
         <p className="max-w-2xl text-stone-300">
-          BigMind is focused on a simple free nightly sleep loop right now. Keep your profile ready
-          for tonight, and let billing stay in the background until it is actually needed.
+          Keep your profile ready for tonight, and shape the experience so BigMind feels calmer,
+          simpler, and more personal from the start.
         </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Account status</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Account</p>
           <p className="mt-4 text-2xl font-semibold text-stone-50">{billing.user.email ?? "Signed in"}</p>
           <p className="mt-3 max-w-xl text-sm text-stone-300">
-            Beginner focus: <strong>{profile.beginner_focus ? "on" : "off"}</strong> · sleep focus:{" "}
-            <strong>{profile.sleep_focus ? "on" : "off"}</strong> · onboarding completed:{" "}
+            Beginner guidance: <strong>{profile.beginner_focus ? "on" : "off"}</strong> · sleep focus:{" "}
+            <strong>{profile.sleep_focus ? "on" : "off"}</strong> · setup completed:{" "}
             <strong>{profile.onboarding_completed ? "yes" : "not yet"}</strong>
           </p>
         </div>
 
         <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Membership status</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Plan</p>
           <p className={`mt-4 text-2xl font-semibold ${statusTone[status] ?? "text-stone-50"}`}>
             {status.replaceAll("_", " ")}
           </p>
           <p className="mt-3 text-sm text-stone-300">
-            This stays in the background for now. BigMind Sleep is currently free while the core
-            nightly loop is being proven.
+            BigMind Sleep is currently included while the launch experience stays simple and focused.
           </p>
         </div>
       </section>
 
       <section className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
         <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Sleep profile</p>
-        <h3 className="mt-3 text-2xl font-semibold">Adjust the default experience</h3>
+        <h3 className="mt-3 text-2xl font-semibold">Tune your default experience</h3>
         <p className="mt-3 max-w-2xl text-sm text-stone-300">
-          Keep the defaults calm and beginner-friendly, or tune them before tonight’s session.
+          Keep things calm and beginner-friendly, or adjust them before tonight’s session.
         </p>
 
         <form action={saveProfileSettings} className="mt-6 space-y-5">
@@ -115,13 +114,13 @@ export default async function SettingsPage() {
               type="submit"
               className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Save profile settings
+              Save changes
             </button>
             <Link
               href={profile.onboarding_completed ? "/app/today" : "/app/orientation"}
               className="inline-flex rounded-full border border-stone-700 px-5 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
             >
-              {profile.onboarding_completed ? "Open tonight’s session" : "Finish orientation"}
+              {profile.onboarding_completed ? "Start tonight’s session" : "Finish setup"}
             </Link>
           </div>
         </form>
