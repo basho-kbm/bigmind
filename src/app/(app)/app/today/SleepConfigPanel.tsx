@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 
 import type {
   DailySoundscape,
+  DailySpokenSection,
   DailySpokenTrack,
   SoundscapeKey,
   SleepFocusKey,
@@ -136,6 +137,89 @@ type SleepConfigPanelProps = {
 
 const LAST_SESSION_STORAGE_KEY = "bigmind:last-sleep-session";
 
+type SessionGuidanceSegment = {
+  id: string;
+  purpose: string;
+  durationSeconds: number;
+  text: string;
+};
+
+function buildFallbackSectionsFromTrack(track: {
+  openingLine: string;
+  structure: string[];
+}): DailySpokenSection[] {
+  return [
+    {
+      id: "opening",
+      purpose: "help the listener settle in",
+      approxMinutes: 4,
+      script: track.openingLine,
+    },
+    {
+      id: "main",
+      purpose: track.structure[1] ?? track.structure[0] ?? "continue the guided meditation",
+      approxMinutes: 12,
+      script: [track.structure[0], track.structure[1]].filter(Boolean).join(" "),
+    },
+    {
+      id: "closing",
+      purpose: track.structure[2] ?? "soften into quiet",
+      approxMinutes: 4,
+      script: track.structure[2] ?? "Let the rest of the night unfold without pressure.",
+    },
+  ];
+}
+
+function buildGuidanceSegments(
+  track: { openingLine: string; structure: string[]; sections?: DailySpokenSection[] },
+  totalSeconds: number,
+  soundscapeTitle: string,
+): SessionGuidanceSegment[] {
+  const baseSections = track.sections?.length === 3 ? track.sections : buildFallbackSectionsFromTrack(track);
+  const normalizedSections = baseSections.map((section, index) => ({
+    ...section,
+    script:
+      index === baseSections.length - 1
+        ? `${section.script} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
+        : section.script,
+  }));
+  const totalApproxMinutes = normalizedSections.reduce((sum, section) => sum + Math.max(section.approxMinutes, 1), 0);
+
+  let assignedSeconds = 0;
+
+  return normalizedSections.map((section, index) => {
+    const remainingSections = normalizedSections.length - index;
+    const rawSeconds = Math.round((Math.max(section.approxMinutes, 1) / totalApproxMinutes) * totalSeconds);
+    const durationSeconds =
+      index === normalizedSections.length - 1
+        ? Math.max(45, totalSeconds - assignedSeconds)
+        : Math.max(45, Math.min(totalSeconds - assignedSeconds - (remainingSections - 1) * 45, rawSeconds));
+
+    assignedSeconds += durationSeconds;
+
+    return {
+      id: section.id,
+      purpose: section.purpose,
+      durationSeconds,
+      text: section.script,
+    };
+  });
+}
+
+function getCurrentPromptIndex(prompts: SessionGuidanceSegment[], elapsedSeconds: number) {
+  let elapsedBoundary = 0;
+
+  for (let index = 0; index < prompts.length; index += 1) {
+    elapsedBoundary += prompts[index]?.durationSeconds ?? 0;
+
+    if (elapsedSeconds < elapsedBoundary) {
+      return index;
+    }
+  }
+
+  return Math.max(0, prompts.length - 1);
+}
+
 function formatSeconds(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   const remaining = seconds % 60;
@@ -208,7 +292,7 @@ export function SleepConfigPanel({
     soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
 
   const buildSessionContent = useCallback(
-    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey) => {
+    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) => {
       const fallback = fallbackFocusContent[nextFocus];
       const nextTrack = dailySpokenTracksByFocus[nextFocus] ?? {
         title: nextFocus === defaultFocus ? spokenTitle : fallback.title,
@@ -218,27 +302,29 @@ export function SleepConfigPanel({
       const nextSoundLabel =
         soundOptions.find((option) => option.value === nextSound)?.label ?? "Ocean";
       const nextSoundscapeTitle = dailySoundscapesByKey[nextSound]?.title;
+      const totalSessionSeconds = Math.max(60, Number(nextLength) * 60);
 
       return {
         title: nextTrack.title,
-        prompts: [
-          nextTrack.openingLine,
-          ...nextTrack.structure,
-          `Let ${nextSoundscapeTitle?.toLowerCase() ?? nextSoundLabel.toLowerCase()} carry the rest of the night without pressure.`,
-        ],
+        prompts: buildGuidanceSegments(
+          nextTrack,
+          totalSessionSeconds,
+          nextSoundscapeTitle ?? nextSoundLabel,
+        ),
       };
     },
     [dailySoundscapesByKey, dailySpokenTracksByFocus, defaultFocus, openingLine, spokenTitle, structure],
   );
 
-  const sessionContent = useMemo(() => buildSessionContent(focus, sound), [buildSessionContent, focus, sound]);
+  const sessionContent = useMemo(
+    () => buildSessionContent(focus, sound, length),
+    [buildSessionContent, focus, sound, length],
+  );
 
   const progressPercent = Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100);
-  const currentPromptIndex = Math.min(
-    sessionContent.prompts.length - 1,
-    Math.floor(((totalSeconds - remainingSeconds) / totalSeconds) * sessionContent.prompts.length),
-  );
-  const currentPrompt = sessionContent.prompts[currentPromptIndex] ?? sessionContent.prompts[0];
+  const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
+  const currentPromptIndex = getCurrentPromptIndex(sessionContent.prompts, elapsedSeconds);
+  const currentPrompt = sessionContent.prompts[currentPromptIndex]?.text ?? sessionContent.prompts[0]?.text ?? "";
 
   const speakPrompt = useCallback(
     (prompt: string) => {
@@ -357,11 +443,11 @@ export function SleepConfigPanel({
   }, []);
 
   function beginSession(nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) {
-    const nextContent = buildSessionContent(nextFocus, nextSound);
+    const nextContent = buildSessionContent(nextFocus, nextSound, nextLength);
 
     if (speechAvailable && speechEnabled) {
       spokenPhaseRef.current = 0;
-      speakPrompt(nextContent.prompts[0] ?? "");
+      speakPrompt(nextContent.prompts[0]?.text ?? "");
     } else {
       spokenPhaseRef.current = null;
     }

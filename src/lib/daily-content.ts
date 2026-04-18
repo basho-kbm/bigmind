@@ -13,6 +13,21 @@ export type SleepFocusKey =
 
 export type SoundscapeKey = "ocean" | "forest" | "orchestra" | "jungle";
 
+export type DailySpokenSection = {
+  id: "opening" | "main" | "closing";
+  purpose: string;
+  approxMinutes: number;
+  script: string;
+};
+
+export type DailyVoiceDirection = {
+  pace: string;
+  tone: string;
+  emphasis: string;
+  pauseStyle: string;
+  avoid: string[];
+};
+
 export type DailySpokenTrack = {
   id: string;
   title: string;
@@ -21,6 +36,11 @@ export type DailySpokenTrack = {
   summary: string;
   openingLine: string;
   structure: string[];
+  intention?: string;
+  teachingAngle?: string;
+  moodTags?: string[];
+  voiceDirection?: DailyVoiceDirection;
+  sections?: DailySpokenSection[];
 };
 
 export type DailySoundscape = {
@@ -71,9 +91,12 @@ type GeneratedSpokenPayload = {
   summary: string;
   openingLine: string;
   structure: string[];
+  intention?: string;
+  teachingAngle?: string;
+  voiceDirection?: DailyVoiceDirection;
+  sections?: DailySpokenSection[];
   moodTags?: string[];
   primaryTeachingAngle?: string;
-  intention?: string;
 };
 
 type GeneratedSoundscapePayload = {
@@ -151,6 +174,203 @@ const soundscapeBriefs: Record<SoundscapeKey, string> = {
   jungle: "Keep lush nighttime depth and immersive but non-threatening environmental texture. Vary insect bed, water presence, and humid density.",
 };
 
+function buildFallbackSections(focus: SleepFocusKey): DailySpokenSection[] {
+  switch (focus) {
+    case "body_scan":
+      return [
+        {
+          id: "opening",
+          purpose: "help the listener arrive in the body without effort",
+          approxMinutes: 4,
+          script:
+            "Let the bed hold your weight for a moment. You do not need to do this perfectly. Just notice the places where the body is already touching something solid. Notice the forehead. Notice the jaw. Notice the shoulders. Let the first small change be simple. A little less holding. A little less effort.",
+        },
+        {
+          id: "main",
+          purpose: "move softly through the body and reduce tension",
+          approxMinutes: 12,
+          script:
+            "Now let attention travel slowly down through the body. The face can soften. The throat can soften. The chest can stop preparing for tomorrow. Let the hands be heavy. Let the belly be unguarded. Let the hips drop down. Let the legs give their weight to the mattress. If the mind wanders, that is all right. Just come back to the next part of the body and let it unclench a little more.",
+        },
+        {
+          id: "closing",
+          purpose: "fade out of guidance and let sleep come on its own",
+          approxMinutes: 4,
+          script:
+            "You do not need to finish the scan. You only need to be a little less busy than before. Let the whole body rest at once now. If sleep comes, let it come. If you are still awake, let resting be enough for this moment. Nothing is being asked of you now.",
+        },
+      ];
+    case "open_awareness":
+      return [
+        {
+          id: "opening",
+          purpose: "open the field of attention gently",
+          approxMinutes: 4,
+          script:
+            "Instead of narrowing down, let awareness open a little wider tonight. Breath can be here. Sound can be here. The feeling of the room can be here. Thoughts can pass through without becoming the whole night. You do not need to push anything out.",
+        },
+        {
+          id: "main",
+          purpose: "let thoughts and sensations move inside a wider field",
+          approxMinutes: 12,
+          script:
+            "Notice how experience keeps changing on its own. A sound appears, then fades. A thought appears, then changes shape. A feeling in the body shifts a little. Let all of it move in a larger space. There is no need to chase the pleasant things or correct the restless ones. Tonight the practice is allowing. Let the mind be wide enough that each thought can come and go without argument.",
+        },
+        {
+          id: "closing",
+          purpose: "soften into simple awareness without analysis",
+          approxMinutes: 4,
+          script:
+            "Now make the practice even simpler. Let everything be received a little more loosely. Breath, sound, body, thought, space. Nothing to solve. Nothing to hold together. Let awareness stay open until even the effort to stay open begins to fade.",
+        },
+      ];
+    case "breath":
+      return [
+        {
+          id: "opening",
+          purpose: "give the mind one easy returning place",
+          approxMinutes: 3,
+          script:
+            "If the mind is busy tonight, give it one soft place to return. Not a task. Not a performance. Just this breath, arriving and leaving by itself. Let the exhale do a little more of the calming work.",
+        },
+        {
+          id: "main",
+          purpose: "settle into natural breath without turning it into work",
+          approxMinutes: 9,
+          script:
+            "Stay close to the breath in the easiest possible way. Feel one inhale. Feel one exhale. If you like, count a few exhales softly, then let the counting go. When attention drifts, return without commentary. The breath does not need to be deeper. It does not need to be cleaner. Let natural breathing be enough to gather the mind back into one place.",
+        },
+        {
+          id: "closing",
+          purpose: "let the breath keep going without supervision",
+          approxMinutes: 3,
+          script:
+            "Now release even the small effort of following closely. The breath can continue on its own. You can rest beside it. Let breathing happen the way sleep happens, without management.",
+        },
+      ];
+    case "zen_self":
+      return [
+        {
+          id: "opening",
+          purpose: "reduce identification with the day before sleep",
+          approxMinutes: 4,
+          script:
+            "Tonight you do not need to carry your whole identity into bed with you. The role you played today can rest. The problems can rest. Even the version of you that has been trying to hold everything together can loosen a little now.",
+        },
+        {
+          id: "main",
+          purpose: "help the listener feel less fused with self-story",
+          approxMinutes: 12,
+          script:
+            "Thoughts about yourself may still appear. Let them. But see if they can be just thoughts for a while, not commands and not definitions. A memory can pass through. A worry can pass through. A plan can pass through. You do not have to disappear. You only have to stop gripping the story so tightly. Under all the narration, there is still breathing, stillness, and the simple fact of being here.",
+        },
+        {
+          id: "closing",
+          purpose: "rest in being rather than in explanation",
+          approxMinutes: 4,
+          script:
+            "Let the need to explain yourself grow quieter. Let the body lie here without a title. Let the mind be unfinished. Sleep does not require a finished self. Rest can begin before understanding does.",
+        },
+      ];
+    case "zen_impermanence":
+      return [
+        {
+          id: "opening",
+          purpose: "use change to soften nighttime gripping",
+          approxMinutes: 4,
+          script:
+            "Even this night is moving. Even this mood is moving. The breath changes. Sensation changes. The quality of thought changes. You do not have to force change. Just notice that it is already happening.",
+        },
+        {
+          id: "main",
+          purpose: "show that wakefulness and tension are not fixed states",
+          approxMinutes: 12,
+          script:
+            "Notice one breath beginning, turning, ending. Notice one sound appearing, then leaving. Notice how tension comes in waves instead of staying exactly the same. Restlessness also changes shape. The mind likes to say this is how the whole night will be. But the night is already moving. Stay close to that simple truth. Not to convince yourself. Just to stop gripping the moment as if it were permanent.",
+        },
+        {
+          id: "closing",
+          purpose: "let the listener soften into the changing night",
+          approxMinutes: 4,
+          script:
+            "Let the changing night carry you now. You do not need to know what the next minute will feel like. It will not be this exact minute. Let that be enough. Let change do some of the easing for you.",
+        },
+      ];
+    case "zen_emptiness":
+      return [
+        {
+          id: "opening",
+          purpose: "create more room around thoughts and feelings",
+          approxMinutes: 4,
+          script:
+            "Tonight, make a little more room around everything. Around the breath. Around the body. Around each thought. Nothing has to disappear. It only has to stop feeling so solid and absolute.",
+        },
+        {
+          id: "main",
+          purpose: "translate emptiness into spaciousness rather than philosophy",
+          approxMinutes: 12,
+          script:
+            "When a thought arrives, notice how quickly the mind wants to make it heavy. See if it can stay lighter than that. When a feeling appears, see if there is a little space around it. The self that feels pressured. The problem that feels enormous. The restlessness that feels central. Give each one a little more room. Not by denying it, but by refusing to make it the whole field.",
+        },
+        {
+          id: "closing",
+          purpose: "end in looseness and less fixation",
+          approxMinutes: 4,
+          script:
+            "Let the night grow wider than the things you have been holding. Let each thought be less solid. Let each feeling float in a little more space. Let yourself rest in that roominess now.",
+        },
+      ];
+    case "zen_beginner":
+      return [
+        {
+          id: "opening",
+          purpose: "remove performance pressure from the first minute",
+          approxMinutes: 3,
+          script:
+            "You do not need to be good at this tonight. You do not need a perfect posture, a perfect breath, or a perfect mind. You only need to begin from where you already are.",
+        },
+        {
+          id: "main",
+          purpose: "make simplicity feel sufficient and calming",
+          approxMinutes: 9,
+          script:
+            "Let this be simple enough for a tired person. Feel the body where it touches the bed. Feel one breath. Hear one sound. That is already enough material for meditation tonight. If the mind says you should be doing more, notice that voice and let it pass. Beginner's mind is not ignorance. It is the willingness to stop performing and meet this moment directly.",
+        },
+        {
+          id: "closing",
+          purpose: "let the listener drift without self-judgment",
+          approxMinutes: 3,
+          script:
+            "Now let the practice become even smaller. Less ambition. Less checking. Less self-judgment. If sleep comes, good. If not, this softer way of being here is already enough for tonight.",
+        },
+      ];
+    case "zen_stories":
+      return [
+        {
+          id: "opening",
+          purpose: "offer a simple bedtime story frame",
+          approxMinutes: 4,
+          script:
+            "A traveler came at dusk and asked an old teacher how much farther the road went. The teacher lifted a lantern, set it on the ground between them, and said, walk as far as this light reaches, then carry the lantern forward. That is enough for one night.",
+        },
+        {
+          id: "main",
+          purpose: "draw one gentle bedtime teaching from the story",
+          approxMinutes: 12,
+          script:
+            "The mind wants the whole road lit before it can rest. But tonight you do not need the whole road. You only need this breath. This patch of bed beneath you. This little bit of quiet you can feel right now. Let the story be small. Let the lesson be small. A night does not have to be solved all at once. Peace can arrive one lantern-length at a time.",
+        },
+        {
+          id: "closing",
+          purpose: "fade the story into body, breath, and sleep",
+          approxMinutes: 4,
+          script:
+            "Now put the lantern down. Feel the body here. Feel the breath here. Let the story drift into the background. Nothing more to figure out. Just this little circle of rest, and then whatever sleep wants to do next.",
+        },
+      ];
+  }
+}
+
 const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
   body_scan: {
     id: "spoken-body-scan-soft-arrival",
@@ -165,6 +385,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "scan the face, jaw, shoulders, chest, belly, hips, and legs",
       "rest in a steady closing quiet",
     ],
+    sections: buildFallbackSections("body_scan"),
   },
   open_awareness: {
     id: "spoken-open-awareness-night-sky",
@@ -179,6 +400,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "notice sounds, breath, and sensation without choosing favorites",
       "drift into silence without forcing the ending",
     ],
+    sections: buildFallbackSections("open_awareness"),
   },
   breath: {
     id: "spoken-breath-counting-low-friction",
@@ -193,6 +415,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "restart without judgment when attention wanders",
       "release the count and let breath continue on its own",
     ],
+    sections: buildFallbackSections("breath"),
   },
   zen_self: {
     id: "spoken-zen-self-lightly-held",
@@ -206,6 +429,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "hear a short reflection on the softening of self-story",
       "return to breath and soundscape as the teaching fades",
     ],
+    sections: buildFallbackSections("zen_self"),
   },
   zen_impermanence: {
     id: "spoken-zen-impermanence-easing",
@@ -220,6 +444,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "hear a short impermanence teaching",
       "rest with the sense that nothing must be fixed before sleep",
     ],
+    sections: buildFallbackSections("zen_impermanence"),
   },
   zen_emptiness: {
     id: "spoken-zen-emptiness-roominess",
@@ -233,6 +458,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "hear a short teaching on roominess and non-grasping",
       "let sound carry the session toward sleep",
     ],
+    sections: buildFallbackSections("zen_emptiness"),
   },
   zen_beginner: {
     id: "spoken-zen-beginners-mind-bedtime",
@@ -247,6 +473,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "hear a short beginner’s mind reflection",
       "settle into breath and sound without effort",
     ],
+    sections: buildFallbackSections("zen_beginner"),
   },
   zen_stories: {
     id: "spoken-zen-story-lantern",
@@ -261,6 +488,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
       "pause with one simple takeaway",
       "fade back into breath and soundscape",
     ],
+    sections: buildFallbackSections("zen_stories"),
   },
 };
 
@@ -340,6 +568,71 @@ function toStringArray(value: unknown, fallback: string[] = []) {
   return value.filter((item): item is string => typeof item === "string");
 }
 
+function toVoiceDirection(value: unknown): DailyVoiceDirection | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.pace !== "string" ||
+    typeof candidate.tone !== "string" ||
+    typeof candidate.emphasis !== "string" ||
+    typeof candidate.pauseStyle !== "string"
+  ) {
+    return undefined;
+  }
+
+  return {
+    pace: candidate.pace,
+    tone: candidate.tone,
+    emphasis: candidate.emphasis,
+    pauseStyle: candidate.pauseStyle,
+    avoid: toStringArray(candidate.avoid, []),
+  };
+}
+
+function toSpokenSections(
+  value: unknown,
+  fallback: DailySpokenSection[],
+): DailySpokenSection[] {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const sections = value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const candidate = item as Record<string, unknown>;
+      const id = candidate.id;
+
+      if (
+        (id !== "opening" && id !== "main" && id !== "closing") ||
+        typeof candidate.purpose !== "string" ||
+        typeof candidate.script !== "string"
+      ) {
+        return null;
+      }
+
+      return {
+        id,
+        purpose: candidate.purpose,
+        approxMinutes:
+          typeof candidate.approxMinutes === "number" && candidate.approxMinutes > 0
+            ? candidate.approxMinutes
+            : fallback.find((section) => section.id === id)?.approxMinutes ?? 4,
+        script: candidate.script,
+      } satisfies DailySpokenSection;
+    })
+    .filter((item): item is DailySpokenSection => Boolean(item));
+
+  return sections.length === 3 ? sections : fallback;
+}
+
 function mapStoredSpokenTrack(row: StoredDailyContentRow): DailySpokenTrack | null {
   if (row.content_kind !== "spoken") {
     return null;
@@ -355,6 +648,10 @@ function mapStoredSpokenTrack(row: StoredDailyContentRow): DailySpokenTrack | nu
     return null;
   }
 
+  const payload = row.raw_payload && typeof row.raw_payload === "object"
+    ? (row.raw_payload as Record<string, unknown>)
+    : null;
+
   return {
     id: `spoken-${focus}-${row.date_key}`,
     title: row.title,
@@ -363,6 +660,18 @@ function mapStoredSpokenTrack(row: StoredDailyContentRow): DailySpokenTrack | nu
     summary: row.summary,
     openingLine: row.opening_line,
     structure: toStringArray(row.structure, fallbackSpokenTracks[focus].structure).slice(0, 4),
+    intention: payload && typeof payload.intention === "string" ? payload.intention : undefined,
+    teachingAngle:
+      typeof row.primary_angle === "string"
+        ? row.primary_angle
+        : payload && typeof payload.teachingAngle === "string"
+          ? payload.teachingAngle
+          : undefined,
+    moodTags: payload ? toStringArray(payload.moodTags, []) : undefined,
+    voiceDirection: payload ? toVoiceDirection(payload.voiceDirection) : undefined,
+    sections: payload
+      ? toSpokenSections(payload.sections, fallbackSpokenTracks[focus].sections ?? [])
+      : fallbackSpokenTracks[focus].sections,
   };
 }
 
@@ -486,11 +795,15 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
   try {
     const result = (await callOpenAIJson(
       [
-        "You generate bedtime spoken tracks for BigMind Sleep.",
-        "The voice is Roshi-bot: 40% Shunryu Suzuki, 40% Alan Watts, 20% Ram Dass.",
-        "Do not imitate exact quotes or signature phrases.",
-        "The tone must be calm, spacious, beginner-friendly, and sleep-safe.",
-        "Avoid lecturing, urgency, spiritual performance, or stimulating abstraction.",
+        "You are Roshi-bot for BigMind Sleep.",
+        "Generate a full-length guided sleep meditation for tonight.",
+        "This is bedtime guidance for tired beginners, not generic wellness copy.",
+        "Core influence references for internal guidance only: zen meditation, sleep meditation, Alan Watts, Shunryu Suzuki, and Ram Dass.",
+        "Do not imitate exact quotes, signature phrases, or recognizable passages.",
+        "Do not name the influences in the script.",
+        "Keep the voice calm, grounded, unhurried, lightly austere, and about 10 to 15 percent warmer and more intimate than a traditional Zen lecture cadence.",
+        "Avoid app-coach cheerfulness, therapy clichés, mystical theater, abstraction, urgency, or anything sleep-activating.",
+        "The meditation must be genuinely useful on first listen and end softer than it begins.",
         "Return JSON only.",
       ].join(" "),
       [
@@ -499,16 +812,24 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
         `Track brief: ${focusBriefs[focus]}.`,
         `Target default duration: ${defaultDurations[focus]} minutes.`,
         "The output must feel fresh today, not like a light paraphrase of a stock script.",
+        "The script must work as a real guided meditation with an opening settle-in, a substantive middle section, and a softer drift-out closing.",
         "Return valid JSON with exactly these keys:",
-        '{"title":"string","summary":"string","openingLine":"string","structure":["string","string","string"],"moodTags":["string"],"primaryTeachingAngle":"string","intention":"string"}',
+        '{"title":"string","summary":"string","openingLine":"string","structure":["string","string","string"],"intention":"string","teachingAngle":"string","moodTags":["string"],"voiceDirection":{"pace":"string","tone":"string","emphasis":"string","pauseStyle":"string","avoid":["string","string"]},"sections":[{"id":"opening","purpose":"string","approxMinutes":4,"script":"string"},{"id":"main","purpose":"string","approxMinutes":12,"script":"string"},{"id":"closing","purpose":"string","approxMinutes":4,"script":"string"}],"freshnessNotes":{"openingDifference":"string","mainDifference":"string","closingDifference":"string"},"safetyChecks":{"sleepSafe":true,"nonImitative":true,"beginnerFriendly":true,"freshVsRecentHistory":true}}',
         "The title should be short and calm.",
         "The summary should be one sentence.",
         "The openingLine should be one bedtime-safe sentence.",
         "The structure array should contain exactly 3 short stage descriptions, each under 16 words.",
+        "Each section script should be substantive, sleep-safe, and ready for voice rendering.",
       ].join("\n"),
     )) as GeneratedSpokenPayload | null;
 
-    if (!result?.title || !result.summary || !result.openingLine || !Array.isArray(result.structure)) {
+    if (
+      !result?.title ||
+      !result.summary ||
+      !result.openingLine ||
+      !Array.isArray(result.structure) ||
+      !Array.isArray(result.sections)
+    ) {
       return fallback;
     }
 
@@ -520,6 +841,11 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
       summary: result.summary,
       openingLine: result.openingLine,
       structure: result.structure.filter(Boolean).slice(0, 3),
+      intention: result.intention,
+      teachingAngle: result.teachingAngle ?? result.primaryTeachingAngle,
+      moodTags: result.moodTags ?? [],
+      voiceDirection: toVoiceDirection(result.voiceDirection),
+      sections: toSpokenSections(result.sections, fallback.sections ?? []),
     };
 
     await upsertStoredRow({
@@ -532,7 +858,7 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
       opening_line: track.openingLine,
       structure: track.structure,
       mood_tags: result.moodTags ?? [],
-      primary_angle: result.primaryTeachingAngle ?? null,
+      primary_angle: result.teachingAngle ?? result.primaryTeachingAngle ?? null,
       raw_payload: result,
       llm_model: openAiModel,
     });
