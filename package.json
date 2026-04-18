@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "supabase:update-auth-email-templates": "node scripts/update-supabase-auth-email-templates.mjs"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.46.0",

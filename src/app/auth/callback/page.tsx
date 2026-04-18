@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { type EmailOtpType } from "@supabase/supabase-js";
 
+import { getSafeAuthRedirect } from "@/lib/auth-redirect";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 const validOtpTypes = new Set<EmailOtpType>([
@@ -21,7 +22,10 @@ export default function AuthCallbackPage() {
       return "/app";
     }
 
-    return new URLSearchParams(window.location.search).get("next") ?? "/app";
+    return getSafeAuthRedirect(
+      new URLSearchParams(window.location.search).get("next"),
+      window.location.origin,
+    );
   }, []);
 
   useEffect(() => {
