@@ -41,9 +41,7 @@ export default function MarketingHome() {
       <div className="mx-auto flex max-w-5xl flex-col gap-12">
         <section className="flex flex-col gap-6">
           <div className="inline-flex w-fit rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm text-emerald-200">
-            BigMind Sleep 
-            
-            &middot; Phase 1 free launch
+            BigMind Sleep &middot; Free to start
           </div>
           <div className="max-w-3xl space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
@@ -108,8 +106,8 @@ export default function MarketingHome() {
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Sleep guides</p>
             <h2 className="text-2xl font-medium">Start with the simplest help first</h2>
             <p className="max-w-3xl text-stone-300">
-              Three beginner-friendly guides are now live to help new visitors understand the
-              product promise and move into BigMind Sleep with less friction.
+              Three beginner-friendly guides help new visitors understand the product promise and
+              move into BigMind Sleep with less friction.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
