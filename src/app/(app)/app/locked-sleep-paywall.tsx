@@ -18,8 +18,8 @@ export function LockedSleepPaywall({ profile }: { profile?: ProfileRecord | null
           Fall asleep with more calm, less mental noise.
         </h2>
         <p className="max-w-2xl text-stone-300">
-          BigMind Phase 1 is built around sleep-first support for beginners. Subscribe to unlock the
-          nightly meditation flow, sleep-focused guidance, and the first real daily practice loop.
+          BigMind Sleep is built around sleep-first support for beginners. Subscribe to unlock the
+          nightly meditation flow, sleep-focused guidance, and a daily practice you can actually return to.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export function LockedSleepPaywall({ profile }: { profile?: ProfileRecord | null
           <p className="mt-4 text-sm text-stone-300">
             {sleepFocus
               ? "Your account is already aligned to sleep-focused support. Subscribe to unlock the full experience."
-              : "BigMind Phase 1 leads with sleep support first, then expands into the broader calm practice journey."}
+              : "BigMind starts with sleep support first, then expands into a broader calm practice journey."}
           </p>
         </div>
       </div>

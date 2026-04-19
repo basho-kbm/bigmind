@@ -55,7 +55,7 @@ export default async function SettingsPage() {
             {status.replaceAll("_", " ")}
           </p>
           <p className="mt-3 text-sm text-stone-300">
-            BigMind Sleep is currently included while the launch experience stays simple and focused.
+            BigMind keeps access simple right now so starting tonight’s session feels straightforward.
           </p>
         </div>
       </section>
