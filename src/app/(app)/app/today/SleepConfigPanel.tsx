@@ -6,6 +6,7 @@ import type {
   DailySoundscape,
   DailySpokenSection,
   DailySpokenTrack,
+  DailyVoiceDirection,
   SoundscapeKey,
   SleepFocusKey,
 } from "@/lib/daily-content";
@@ -144,6 +145,110 @@ type SessionGuidanceSegment = {
   text: string;
 };
 
+type SessionContent = {
+  title: string;
+  prompts: SessionGuidanceSegment[];
+  voiceDirection?: DailyVoiceDirection;
+};
+
+function normalizeCueText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function splitCueParts(script: string) {
+  const normalized = normalizeCueText(script);
+
+  if (!normalized) {
+    return [] as string[];
+  }
+
+  const sentenceParts = normalized
+    .split(/(?<=[.!?])\s+/)
+    .map(normalizeCueText)
+    .filter(Boolean);
+
+  const expandedParts = sentenceParts.flatMap((part) => {
+    if (part.length <= 120) {
+      return [part];
+    }
+
+    return part
+      .split(/,\s+|;\s+/)
+      .map(normalizeCueText)
+      .filter(Boolean);
+  });
+
+  return expandedParts.length > 0 ? expandedParts : [normalized];
+}
+
+function buildCueTexts(script: string, approxMinutes: number) {
+  const parts = splitCueParts(script);
+
+  if (parts.length === 0) {
+    return [] as string[];
+  }
+
+  const targetCueCount = Math.max(2, Math.min(5, Math.round(approxMinutes / 3)));
+  const cueCount = Math.max(1, Math.min(targetCueCount, parts.length));
+  const cues: string[] = [];
+  let cursor = 0;
+
+  for (let index = 0; index < cueCount; index += 1) {
+    const remainingParts = parts.length - cursor;
+    const remainingCues = cueCount - index;
+    const take = Math.max(1, Math.ceil(remainingParts / remainingCues));
+    const cue = normalizeCueText(parts.slice(cursor, cursor + take).join(" "));
+
+    if (cue) {
+      cues.push(cue);
+    }
+
+    cursor += take;
+  }
+
+  return cues;
+}
+
+function getSpeechSettings(voiceDirection?: DailyVoiceDirection) {
+  const profile = [
+    voiceDirection?.pace,
+    voiceDirection?.tone,
+    voiceDirection?.emphasis,
+    voiceDirection?.pauseStyle,
+    ...(voiceDirection?.avoid ?? []),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  let rate = 0.9;
+  let pitch = 0.95;
+  let volume = 0.85;
+
+  if (/(unhurried|slow|slower|spacious|deliberate|room between thoughts)/.test(profile)) {
+    rate -= 0.08;
+  }
+
+  if (/(grounded|low-drama|lightly austere|steady)/.test(profile)) {
+    pitch -= 0.07;
+  }
+
+  if (/(warm|intimate|gentle)/.test(profile)) {
+    volume += 0.02;
+  }
+
+  if (/(whisper|asmr|cheerful|theatrical)/.test(profile)) {
+    pitch = Math.max(0.84, pitch - 0.03);
+    rate = Math.max(0.78, rate - 0.02);
+  }
+
+  return {
+    rate: Math.min(1, Math.max(0.78, rate)),
+    pitch: Math.min(1.05, Math.max(0.84, pitch)),
+    volume: Math.min(0.92, Math.max(0.75, volume)),
+  };
+}
+
 function buildFallbackSectionsFromTrack(track: {
   openingLine: string;
   structure: string[];
@@ -154,18 +259,21 @@ function buildFallbackSectionsFromTrack(track: {
       purpose: "help the listener settle in",
       approxMinutes: 4,
       script: track.openingLine,
+      cues: buildCueTexts(track.openingLine, 4),
     },
     {
       id: "main",
       purpose: track.structure[1] ?? track.structure[0] ?? "continue the guided meditation",
       approxMinutes: 12,
       script: [track.structure[0], track.structure[1]].filter(Boolean).join(" "),
+      cues: buildCueTexts([track.structure[0], track.structure[1]].filter(Boolean).join(" "), 12),
     },
     {
       id: "closing",
       purpose: track.structure[2] ?? "soften into quiet",
       approxMinutes: 4,
       script: track.structure[2] ?? "Let the rest of the night unfold without pressure.",
+      cues: buildCueTexts(track.structure[2] ?? "Let the rest of the night unfold without pressure.", 4),
     },
   ];
 }
@@ -176,34 +284,79 @@ function buildGuidanceSegments(
   soundscapeTitle: string,
 ): SessionGuidanceSegment[] {
   const baseSections = track.sections?.length === 3 ? track.sections : buildFallbackSectionsFromTrack(track);
-  const normalizedSections = baseSections.map((section, index) => ({
-    ...section,
-    script:
-      index === baseSections.length - 1
-        ? `${section.script} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
-        : section.script,
-  }));
-  const totalApproxMinutes = normalizedSections.reduce((sum, section) => sum + Math.max(section.approxMinutes, 1), 0);
-
-  let assignedSeconds = 0;
-
-  return normalizedSections.map((section, index) => {
-    const remainingSections = normalizedSections.length - index;
-    const rawSeconds = Math.round((Math.max(section.approxMinutes, 1) / totalApproxMinutes) * totalSeconds);
-    const durationSeconds =
-      index === normalizedSections.length - 1
-        ? Math.max(45, totalSeconds - assignedSeconds)
-        : Math.max(45, Math.min(totalSeconds - assignedSeconds - (remainingSections - 1) * 45, rawSeconds));
-
-    assignedSeconds += durationSeconds;
+  const normalizedSections = baseSections.map((section, index) => {
+    const sectionCueTexts = section.cues?.filter(Boolean).slice(0, 5) ?? buildCueTexts(section.script, section.approxMinutes);
+    const cues = sectionCueTexts.length > 0 ? sectionCueTexts : [section.script];
 
     return {
-      id: section.id,
-      purpose: section.purpose,
-      durationSeconds,
-      text: section.script,
+      ...section,
+      script:
+        index === baseSections.length - 1
+          ? `${section.script} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
+          : section.script,
+      cues:
+        index === baseSections.length - 1
+          ? cues.map((cue, cueIndex) =>
+              cueIndex === cues.length - 1
+                ? `${cue} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
+                : cue,
+            )
+          : cues,
     };
   });
+  const totalApproxMinutes = normalizedSections.reduce((sum, section) => sum + Math.max(section.approxMinutes, 1), 0);
+
+  let assignedSectionSeconds = 0;
+  const prompts: SessionGuidanceSegment[] = [];
+
+  normalizedSections.forEach((section, sectionIndex) => {
+    const remainingSections = normalizedSections.length - sectionIndex;
+    const rawSectionSeconds = Math.round((Math.max(section.approxMinutes, 1) / totalApproxMinutes) * totalSeconds);
+    const sectionDurationSeconds =
+      sectionIndex === normalizedSections.length - 1
+        ? Math.max(45, totalSeconds - assignedSectionSeconds)
+        : Math.max(
+            45,
+            Math.min(
+              totalSeconds - assignedSectionSeconds - (remainingSections - 1) * 45,
+              rawSectionSeconds,
+            ),
+          );
+
+    assignedSectionSeconds += sectionDurationSeconds;
+
+    const cueTexts = section.cues?.length ? section.cues : [section.script];
+    const cueWeights = cueTexts.map((cue) => Math.max(8, cue.split(/\s+/).filter(Boolean).length));
+    const totalCueWeight = cueWeights.reduce((sum, weight) => sum + weight, 0);
+    const minCueSeconds = Math.max(18, Math.floor(sectionDurationSeconds / Math.max(cueTexts.length * 2, 1)));
+    let assignedCueSeconds = 0;
+
+    cueTexts.forEach((cue, cueIndex) => {
+      const remainingCueCount = cueTexts.length - cueIndex;
+      const rawCueSeconds = Math.round((cueWeights[cueIndex] / totalCueWeight) * sectionDurationSeconds);
+      const durationSeconds =
+        cueIndex === cueTexts.length - 1
+          ? Math.max(minCueSeconds, sectionDurationSeconds - assignedCueSeconds)
+          : Math.max(
+              minCueSeconds,
+              Math.min(
+                sectionDurationSeconds - assignedCueSeconds - (remainingCueCount - 1) * minCueSeconds,
+                rawCueSeconds,
+              ),
+            );
+
+      assignedCueSeconds += durationSeconds;
+
+      prompts.push({
+        id: `${section.id}-${cueIndex + 1}`,
+        purpose: section.purpose,
+        durationSeconds,
+        text: cue,
+      });
+    });
+  });
+
+  return prompts;
 }
 
 function getCurrentPromptIndex(prompts: SessionGuidanceSegment[], elapsedSeconds: number) {
@@ -292,12 +445,14 @@ export function SleepConfigPanel({
     soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
 
   const buildSessionContent = useCallback(
-    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) => {
+    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string): SessionContent => {
       const fallback = fallbackFocusContent[nextFocus];
       const nextTrack = dailySpokenTracksByFocus[nextFocus] ?? {
         title: nextFocus === defaultFocus ? spokenTitle : fallback.title,
         openingLine: nextFocus === defaultFocus ? openingLine : fallback.openingLine,
         structure: nextFocus === defaultFocus ? structure : fallback.structure,
+        sections: undefined,
+        voiceDirection: undefined,
       };
       const nextSoundLabel =
         soundOptions.find((option) => option.value === nextSound)?.label ?? "Ocean";
@@ -306,6 +461,7 @@ export function SleepConfigPanel({
 
       return {
         title: nextTrack.title,
+        voiceDirection: nextTrack.voiceDirection,
         prompts: buildGuidanceSegments(
           nextTrack,
           totalSessionSeconds,
@@ -325,9 +481,12 @@ export function SleepConfigPanel({
   const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
   const currentPromptIndex = getCurrentPromptIndex(sessionContent.prompts, elapsedSeconds);
   const currentPrompt = sessionContent.prompts[currentPromptIndex]?.text ?? sessionContent.prompts[0]?.text ?? "";
+  const currentPromptPurpose =
+    sessionContent.prompts[currentPromptIndex]?.purpose ?? sessionContent.prompts[0]?.purpose ?? "";
+  const currentVoiceDirection = sessionContent.voiceDirection;
 
   const speakPrompt = useCallback(
-    (prompt: string) => {
+    (prompt: string, voiceDirection?: DailyVoiceDirection) => {
       if (!speechAvailable || !speechEnabled || typeof window === "undefined") {
         return;
       }
@@ -335,9 +494,10 @@ export function SleepConfigPanel({
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(prompt);
-      utterance.rate = 0.9;
-      utterance.pitch = 0.95;
-      utterance.volume = 0.85;
+      const speechSettings = getSpeechSettings(voiceDirection);
+      utterance.rate = speechSettings.rate;
+      utterance.pitch = speechSettings.pitch;
+      utterance.volume = speechSettings.volume;
 
       window.speechSynthesis.speak(utterance);
     },
@@ -420,8 +580,8 @@ export function SleepConfigPanel({
 
     spokenPhaseRef.current = currentPromptIndex;
 
-    speakPrompt(currentPrompt);
-  }, [currentPrompt, currentPromptIndex, speakPrompt, view]);
+    speakPrompt(currentPrompt, currentVoiceDirection);
+  }, [currentPrompt, currentPromptIndex, currentVoiceDirection, speakPrompt, view]);
 
   useEffect(() => {
     if (!speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -430,9 +590,9 @@ export function SleepConfigPanel({
     }
 
     if (speechEnabled && view === "active") {
-      window.setTimeout(() => speakPrompt(currentPrompt), 0);
+      window.setTimeout(() => speakPrompt(currentPrompt, currentVoiceDirection), 0);
     }
-  }, [currentPrompt, speakPrompt, speechEnabled, view]);
+  }, [currentPrompt, currentVoiceDirection, speakPrompt, speechEnabled, view]);
 
   useEffect(() => {
     return () => {
@@ -447,7 +607,7 @@ export function SleepConfigPanel({
 
     if (speechAvailable && speechEnabled) {
       spokenPhaseRef.current = 0;
-      speakPrompt(nextContent.prompts[0]?.text ?? "");
+      speakPrompt(nextContent.prompts[0]?.text ?? "", nextContent.voiceDirection);
     } else {
       spokenPhaseRef.current = null;
     }
@@ -478,7 +638,7 @@ export function SleepConfigPanel({
 
     if (isPaused) {
       setIsPaused(false);
-      window.setTimeout(() => speakPrompt(currentPrompt), 0);
+      window.setTimeout(() => speakPrompt(currentPrompt, currentVoiceDirection), 0);
       return;
     }
 
@@ -643,6 +803,9 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Current guidance</p>
+            {currentPromptPurpose ? (
+              <p className="mt-3 text-xs uppercase tracking-[0.18em] text-stone-500">{currentPromptPurpose}</p>
+            ) : null}
             <p className="mt-3 text-base leading-7 text-stone-100 sm:text-lg sm:leading-8">{currentPrompt}</p>
           </div>
 
