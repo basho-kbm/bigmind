@@ -9,7 +9,7 @@ const dashboardCards = [
   {
     title: "Journal",
     description:
-      "A lightweight reflection space is coming. For now, the focus stays on helping tonight feel calmer.",
+      "A lightweight reflection space will live here. Tonight, the focus stays on helping you feel calmer.",
   },
   {
     title: "Insights",

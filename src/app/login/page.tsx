@@ -27,8 +27,8 @@ export default async function LoginPage() {
         <LoginForm />
 
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-5 text-sm text-stone-300">
-          BigMind keeps the first step simple right now: one email, one magic link, one calmer way
-          into tonight’s session.
+          BigMind keeps the first step simple: one email, one magic link, one calmer way into
+          tonight’s session.
         </div>
 
         <Link href="/" className="text-sm text-emerald-200 underline underline-offset-4">
