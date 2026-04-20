@@ -46,11 +46,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             >
               {nextStepLabel}
             </Link>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-stone-200">
-              <span className="rounded-full border border-stone-700 px-3 py-1">Sleep meditations</span>
-              <span className="rounded-full border border-stone-700 px-3 py-1">Zen stories</span>
-              <span className="rounded-full border border-stone-700 px-3 py-1">Soundscapes</span>
-            </div>
           </div>
 
           <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:mt-6 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0">
