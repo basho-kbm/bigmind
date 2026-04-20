@@ -764,30 +764,8 @@ export function SleepConfigPanel({
   return (
     <div className="space-y-4">
       {view === "config" ? (
-        <>
-          <button
-            type="button"
-            onClick={handleStartRecommended}
-            className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
-          >
-            Start Recommended Session
-          </button>
-
-          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
-            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">About Tonight&apos;s Recommendation</p>
-            <h3 className="mt-3 text-xl font-semibold text-stone-50">{recommendedExperience.title}</h3>
-            <p className="mt-2 text-sm text-stone-400">
-              {recommendedExperience.kindLabel} · {defaultLength} minutes
-            </p>
-            <p className="mt-4">{recommendedExperience.summary}</p>
-            <div className="mt-4 rounded-2xl border border-stone-800 bg-stone-950/60 px-4 py-3 text-sm text-stone-200">
-              {recommendedExperience.voiceEnabled
-                ? "This experience includes spoken guidance."
-                : "This is a soundscape-only experience with no spoken guidance."}
-            </div>
-          </div>
-
-          <form onSubmit={handleStartCustom} className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-200">
+        <div className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-200">
+          <form onSubmit={handleStartCustom} className="space-y-4">
             <div className="space-y-2">
               <p className="font-medium text-stone-100">Sleep Experience</p>
               <select
@@ -819,11 +797,6 @@ export function SleepConfigPanel({
               </select>
             </div>
 
-            <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-4 text-sm text-stone-300">
-              <p className="font-medium text-stone-100">{selectedExperience.kindLabel}</p>
-              <p className="mt-2">{selectedExperience.summary}</p>
-            </div>
-
             <div className="space-y-2">
               <p className="font-medium text-stone-100">Time</p>
               <select
@@ -839,6 +812,11 @@ export function SleepConfigPanel({
               </select>
             </div>
 
+            <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-4 text-sm text-stone-300">
+              <p className="font-medium text-stone-100">{selectedExperience.kindLabel}</p>
+              <p className="mt-2">{selectedExperience.summary}</p>
+            </div>
+
             <button
               type="submit"
               className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
@@ -846,7 +824,7 @@ export function SleepConfigPanel({
               Start this experience
             </button>
           </form>
-        </>
+        </div>
       ) : null}
 
       {view === "active" ? (
