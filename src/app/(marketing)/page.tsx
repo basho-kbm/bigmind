@@ -129,6 +129,11 @@ export default async function MarketingHome() {
               {secondaryLink.label}
             </Link>
           </div>
+          <div className="rounded-2xl border border-stone-800 bg-stone-900/50 p-4 text-sm text-stone-300">
+            {billing
+              ? "Already started? You can pick up tonight’s session in one tap."
+              : "Already started? Use the same email to pick up tonight’s session in one tap."}
+          </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-3">

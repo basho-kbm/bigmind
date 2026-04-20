@@ -28,44 +28,50 @@ export default async function SettingsPage() {
   const status = profile.subscription_status ?? "not_started";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <section className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Settings</p>
-        <h2 className="text-3xl font-semibold tracking-tight">Account and sleep preferences</h2>
+        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Preferences</p>
+        <h2 className="text-3xl font-semibold tracking-tight">Keep tonight simple.</h2>
         <p className="max-w-2xl text-stone-300">
-          Keep your profile ready for tonight, and shape the experience so BigMind feels calmer,
-          simpler, and more personal from the start.
+          These are your defaults. Change them anytime, then head back into tonight’s session.
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Account</p>
-          <p className="mt-4 text-2xl font-semibold text-stone-50">{billing.user.email ?? "Signed in"}</p>
-          <p className="mt-3 max-w-xl text-sm text-stone-300">
-            Beginner guidance: <strong>{profile.beginner_focus ? "on" : "off"}</strong> · sleep focus:{" "}
-            <strong>{profile.sleep_focus ? "on" : "off"}</strong> · setup completed:{" "}
-            <strong>{profile.onboarding_completed ? "yes" : "not yet"}</strong>
-          </p>
+      <section className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Account</p>
+          <p className="mt-3 text-base font-medium text-stone-50">{billing.user.email ?? "Signed in"}</p>
         </div>
-
-        <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Plan</p>
-          <p className={`mt-4 text-2xl font-semibold ${statusTone[status] ?? "text-stone-50"}`}>
+        <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Access</p>
+          <p className={`mt-3 text-base font-medium ${statusTone[status] ?? "text-stone-50"}`}>
             {status.replaceAll("_", " ")}
           </p>
-          <p className="mt-3 text-sm text-stone-300">
-            BigMind keeps access simple so starting tonight’s session feels straightforward.
+        </div>
+        <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Tonight</p>
+          <p className="mt-3 text-base font-medium text-stone-50">
+            {profile.onboarding_completed ? "Ready to start" : "Finish setup first"}
           </p>
         </div>
       </section>
 
       <section className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
-        <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Sleep profile</p>
-        <h3 className="mt-3 text-2xl font-semibold">Tune your default experience</h3>
-        <p className="mt-3 max-w-2xl text-sm text-stone-300">
-          Keep things calm and beginner-friendly, or adjust them before tonight’s session.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Defaults</p>
+            <h3 className="mt-3 text-2xl font-semibold">How BigMind should feel by default</h3>
+            <p className="mt-3 max-w-2xl text-sm text-stone-300">
+              Keep the experience light, sleep-first, and easy to return to.
+            </p>
+          </div>
+          <Link
+            href={profile.onboarding_completed ? "/app/today" : "/app/orientation"}
+            className="inline-flex rounded-full border border-stone-700 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-stone-500"
+          >
+            {profile.onboarding_completed ? "Back to tonight" : "Finish setup"}
+          </Link>
+        </div>
 
         <form action={saveProfileSettings} className="mt-6 space-y-5">
           <label className="block space-y-2">
@@ -88,9 +94,7 @@ export default async function SettingsPage() {
             />
             <span>
               <strong className="text-stone-50">Beginner-friendly guidance</strong>
-              <span className="mt-1 block text-stone-300">
-                Keep the experience lighter, simpler, and less spiritually dense.
-              </span>
+              <span className="mt-1 block text-stone-300">Keep the tone lighter and simpler.</span>
             </span>
           </label>
 
@@ -103,9 +107,7 @@ export default async function SettingsPage() {
             />
             <span>
               <strong className="text-stone-50">Sleep-first recommendations</strong>
-              <span className="mt-1 block text-stone-300">
-                Prioritize calming sleep sessions over broader meditation exploration.
-              </span>
+              <span className="mt-1 block text-stone-300">Keep tonight’s best session front and center.</span>
             </span>
           </label>
 
@@ -114,13 +116,13 @@ export default async function SettingsPage() {
               type="submit"
               className="inline-flex rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Save changes
+              Save defaults
             </button>
             <Link
               href={profile.onboarding_completed ? "/app/today" : "/app/orientation"}
               className="inline-flex rounded-full border border-stone-700 px-5 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
             >
-              {profile.onboarding_completed ? "Start tonight’s session" : "Finish setup"}
+              {profile.onboarding_completed ? "Back to tonight" : "Finish setup"}
             </Link>
           </div>
         </form>

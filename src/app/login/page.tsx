@@ -38,7 +38,7 @@ export default async function LoginPage() {
         <LoginForm />
 
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-5 text-sm text-stone-300">
-          No password to remember. Just your email and a quick link back into tonight’s session.
+          Already started? Use the same email and BigMind will bring you back to tonight’s session.
         </div>
 
         <Link href="/" className="text-sm text-emerald-200 underline underline-offset-4">
