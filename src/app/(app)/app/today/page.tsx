@@ -31,27 +31,6 @@ export default async function TodayPage() {
         </p>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Recommended tonight</p>
-          <p className="mt-2 text-base font-medium text-stone-100">{session.spokenTrack.title}</p>
-        </div>
-        <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Type</p>
-          <p className="mt-2 text-base font-medium text-stone-100">Meditation</p>
-        </div>
-        <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Time</p>
-          <p className="mt-2 text-base font-medium text-stone-100">{session.defaultLengthMinutes} min</p>
-        </div>
-      </section>
-
-      {lastSession ? (
-        <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-4 text-sm text-stone-300">
-          Last time you finished <strong>{lastSession.focusLabel}</strong> for <strong>{lastSession.lengthMinutes} minutes</strong>.
-        </div>
-      ) : null}
-
       <section>
         <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
           <SleepConfigPanel
@@ -67,6 +46,12 @@ export default async function TodayPage() {
           />
         </div>
       </section>
+
+      {lastSession ? (
+        <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-4 text-sm text-stone-300">
+          Last time you finished <strong>{lastSession.focusLabel}</strong> for <strong>{lastSession.lengthMinutes} minutes</strong>.
+        </div>
+      ) : null}
     </div>
   );
 }
