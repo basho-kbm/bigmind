@@ -564,8 +564,11 @@ export function SleepConfigPanel({
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "local-only">("idle");
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const spokenPhaseRef = useRef<number | null>(null);
+  const speechUnlockedRef = useRef(false);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   const selectedExperience =
     experienceGroups.all.find((option) => option.value === experienceKey) ?? recommendedExperience;
@@ -585,23 +588,109 @@ export function SleepConfigPanel({
   const currentPromptPurpose =
     sessionContent.prompts[currentPromptIndex]?.purpose ?? sessionContent.prompts[0]?.purpose ?? "";
 
+  useEffect(() => {
+    if (!speechAvailable || typeof window === "undefined") {
+      voicesRef.current = [];
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    const loadVoices = () => {
+      voicesRef.current = synth.getVoices();
+    };
+
+    loadVoices();
+    synth.addEventListener("voiceschanged", loadVoices);
+
+    return () => synth.removeEventListener("voiceschanged", loadVoices);
+  }, [speechAvailable]);
+
+  const getPreferredVoice = useCallback(() => {
+    if (!speechAvailable || typeof window === "undefined") {
+      return null;
+    }
+
+    const voices = voicesRef.current.length > 0 ? voicesRef.current : window.speechSynthesis.getVoices();
+    const englishVoices = voices.filter((voice) => /^en(-|$)/i.test(voice.lang));
+
+    return (
+      englishVoices.find((voice) =>
+        /samantha|ava|allison|karen|moira|tessa|daniel|arthur|fred|siri|google us english|aria/i.test(
+          voice.name,
+        ),
+      ) ??
+      englishVoices.find((voice) => /en-us/i.test(voice.lang)) ??
+      englishVoices[0] ??
+      voices[0] ??
+      null
+    );
+  }, [speechAvailable]);
+
+  const unlockSpeech = useCallback(() => {
+    if (!speechAvailable || speechUnlockedRef.current || typeof window === "undefined") {
+      return;
+    }
+
+    const synth = window.speechSynthesis;
+    const unlockUtterance = new SpeechSynthesisUtterance(" ");
+    const preferredVoice = getPreferredVoice();
+
+    unlockUtterance.volume = 0;
+    unlockUtterance.rate = 1;
+    unlockUtterance.pitch = 1;
+    unlockUtterance.lang = preferredVoice?.lang || "en-US";
+
+    if (preferredVoice) {
+      unlockUtterance.voice = preferredVoice;
+    }
+
+    synth.cancel();
+    synth.speak(unlockUtterance);
+    synth.cancel();
+    synth.resume();
+    speechUnlockedRef.current = true;
+  }, [getPreferredVoice, speechAvailable]);
+
   const speakPrompt = useCallback(
     (prompt: string, voiceDirection?: DailyVoiceDirection) => {
-      if (!speechAvailable || !sessionContent.voiceEnabled || typeof window === "undefined") {
+      if (!speechAvailable || typeof window === "undefined") {
         return;
       }
 
-      window.speechSynthesis.cancel();
+      const trimmedPrompt = prompt.trim();
 
-      const utterance = new SpeechSynthesisUtterance(prompt);
+      if (!trimmedPrompt) {
+        return;
+      }
+
+      unlockSpeech();
+
+      const synth = window.speechSynthesis;
+      const preferredVoice = getPreferredVoice();
+
+      synth.cancel();
+      synth.resume();
+
+      const utterance = new SpeechSynthesisUtterance(trimmedPrompt);
       const speechSettings = getSpeechSettings(voiceDirection);
+      utterance.lang = preferredVoice?.lang || "en-US";
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
       utterance.rate = speechSettings.rate;
       utterance.pitch = speechSettings.pitch;
       utterance.volume = speechSettings.volume;
+      utterance.onstart = () => setSpeechError(null);
+      utterance.onerror = () => setSpeechError("Voice guidance could not start on this device yet.");
 
-      window.speechSynthesis.speak(utterance);
+      window.setTimeout(() => {
+        synth.speak(utterance);
+        synth.resume();
+      }, 40);
     },
-    [sessionContent.voiceEnabled, speechAvailable],
+    [getPreferredVoice, speechAvailable, unlockSpeech],
   );
 
   const handleComplete = useCallback(() => {
@@ -694,6 +783,7 @@ export function SleepConfigPanel({
     const nextExperience =
       experienceGroups.all.find((option) => option.value === nextExperienceKey) ?? recommendedExperience;
     const nextContent = buildSessionContent(nextExperience, Math.max(60, Number(nextLength) * 60));
+    setSpeechError(null);
 
     if (nextContent.voiceEnabled && speechAvailable) {
       spokenPhaseRef.current = 0;
@@ -863,6 +953,12 @@ export function SleepConfigPanel({
             ) : null}
             <p className="mt-3 text-base leading-7 text-stone-100 sm:text-lg sm:leading-8">{currentPrompt}</p>
           </div>
+
+          {speechError ? (
+            <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
+              {speechError} Keep the page in the foreground and try starting the session again.
+            </div>
+          ) : null}
 
           <div className="grid gap-3 sm:flex sm:flex-wrap">
             <button
