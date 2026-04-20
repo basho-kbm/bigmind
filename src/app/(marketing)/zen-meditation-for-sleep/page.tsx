@@ -54,7 +54,7 @@ const sections = [
   {
     title: "How BigMind approaches Zen for sleep",
     paragraphs: [
-      "For sleep, Zen does not have to mean sitting upright in silence. A more useful approach is usually gentle breath awareness, light body awareness, calm guidance, and an optional soundscape if it helps reduce mental noise.",
+      "For sleep, Zen does not have to mean sitting upright in silence. A more useful approach is usually gentle breath awareness, light body awareness, calm guidance, or a separate soundscape if you want less spoken input.",
       "The point is not purity. The point is usefulness.",
     ],
   },
@@ -79,7 +79,7 @@ const faq = [
   {
     question: "Does Zen meditation for sleep have to be silent?",
     answer:
-      "Not at all. Many people do better with light guidance or a soundscape, especially at the beginning.",
+      "Not at all. Many people do better with light guidance or a standalone soundscape, especially at the beginning.",
   },
 ] as const;
 

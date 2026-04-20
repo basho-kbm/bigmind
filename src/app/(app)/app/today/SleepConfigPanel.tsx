@@ -173,6 +173,23 @@ function getKindLabel(kind: SleepExperienceKind) {
   }
 }
 
+function sanitizeExperienceText(value: string) {
+  return value
+    .replace(/breath and soundscape/gi, "quiet")
+    .replace(/breath and sound/gi, "quiet")
+    .replace(/soundscape/gi, "session")
+    .replace(/soundscapes/gi, "sessions");
+}
+
+function sanitizeSections(sections?: DailySpokenSection[]) {
+  return sections?.map((section) => ({
+    ...section,
+    purpose: sanitizeExperienceText(section.purpose),
+    script: sanitizeExperienceText(section.script),
+    cues: section.cues?.map((cue) => sanitizeExperienceText(cue)),
+  }));
+}
+
 function normalizeCueText(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -441,16 +458,16 @@ function buildExperienceOptions(params: {
     const kind: SleepExperienceKind = focus === "zen_stories" ? "story" : "meditation";
     const option: SleepExperienceOption = {
       value: focus,
-      title: track.title,
+      title: sanitizeExperienceText(track.title),
       kind,
       kindLabel: getKindLabel(kind),
-      summary: track.summary,
-      previewLine: track.openingLine,
-      details: track.structure,
+      summary: sanitizeExperienceText(track.summary),
+      previewLine: sanitizeExperienceText(track.openingLine),
+      details: track.structure.map((item) => sanitizeExperienceText(item)),
       defaultLength: String(track.durationMinutes ?? 20),
       voiceEnabled: true,
       voiceDirection: track.voiceDirection,
-      sections: track.sections,
+      sections: sanitizeSections(track.sections),
     };
 
     if (kind === "story") {

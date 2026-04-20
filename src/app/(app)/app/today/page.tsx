@@ -10,6 +10,14 @@ import { getLatestSleepSession } from "@/lib/sleep-sessions";
 
 import { SleepConfigPanel } from "./SleepConfigPanel";
 
+function sanitizeExperienceText(value: string) {
+  return value
+    .replace(/breath and soundscape/gi, "quiet")
+    .replace(/breath and sound/gi, "quiet")
+    .replace(/soundscape/gi, "session")
+    .replace(/soundscapes/gi, "sessions");
+}
+
 export default async function TodayPage() {
   const user = await requireUser();
   const library = await getDailySleepLibrary();
@@ -56,17 +64,17 @@ export default async function TodayPage() {
         <div className="order-2 space-y-4 md:order-1">
           <div className="rounded-3xl border border-stone-800 bg-stone-950/70 p-6">
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s recommendation</p>
-            <h3 className="mt-3 text-2xl font-semibold">{session.spokenTrack.title}</h3>
+            <h3 className="mt-3 text-2xl font-semibold">{sanitizeExperienceText(session.spokenTrack.title)}</h3>
             <p className="mt-2 text-sm text-stone-500">
               Meditation · {session.dateLabel} · {session.defaultLengthMinutes} minutes
             </p>
-            <p className="mt-4 text-sm leading-6 text-stone-300">{session.spokenTrack.summary}</p>
+            <p className="mt-4 text-sm leading-6 text-stone-300">{sanitizeExperienceText(session.spokenTrack.summary)}</p>
             <div className="mt-6 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-stone-500">What it includes</p>
-              <p className="mt-2 text-sm font-medium text-stone-100">{session.spokenTrack.openingLine}</p>
+              <p className="mt-2 text-sm font-medium text-stone-100">{sanitizeExperienceText(session.spokenTrack.openingLine)}</p>
               <ul className="mt-3 space-y-2 text-sm text-stone-300">
                 {session.spokenTrack.structure.map((item) => (
-                  <li key={item}>• {item}</li>
+                  <li key={item}>• {sanitizeExperienceText(item)}</li>
                 ))}
               </ul>
             </div>

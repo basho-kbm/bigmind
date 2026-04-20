@@ -493,7 +493,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
     structure: [
       "settle the body first",
       "hear a short reflection on the softening of self-story",
-      "return to breath and soundscape as the teaching fades",
+      "let the teaching fade into quiet",
     ],
     sections: buildFallbackSections("zen_self"),
   },
@@ -522,7 +522,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
     structure: [
       "relax the body into the bed",
       "hear a short teaching on roominess and non-grasping",
-      "let sound carry the session toward sleep",
+      "let the session drift toward sleep",
     ],
     sections: buildFallbackSections("zen_emptiness"),
   },
@@ -537,7 +537,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
     structure: [
       "drop the idea of doing meditation correctly",
       "hear a short beginner’s mind reflection",
-      "settle into breath and sound without effort",
+      "settle into stillness without effort",
     ],
     sections: buildFallbackSections("zen_beginner"),
   },
@@ -552,7 +552,7 @@ const fallbackSpokenTracks: Record<SleepFocusKey, DailySpokenTrack> = {
     structure: [
       "listen to a short story told slowly",
       "pause with one simple takeaway",
-      "fade back into breath and soundscape",
+      "fade back into quiet",
     ],
     sections: buildFallbackSections("zen_stories"),
   },
@@ -882,6 +882,7 @@ async function generateSpokenTrack(dateKey: string, focus: SleepFocusKey) {
         `Target default duration: ${defaultDurations[focus]} minutes.`,
         "The output must feel fresh today, not like a light paraphrase of a stock script.",
         "The script must work as a real guided meditation with an opening settle-in, a substantive middle section, and a softer drift-out closing.",
+        "Do not refer to soundscapes, layered audio, or combining this experience with another experience.",
         "Return valid JSON with exactly these keys:",
         '{"title":"string","summary":"string","openingLine":"string","structure":["string","string","string"],"intention":"string","teachingAngle":"string","moodTags":["string"],"voiceDirection":{"pace":"string","tone":"string","emphasis":"string","pauseStyle":"string","avoid":["string","string"]},"sections":[{"id":"opening","purpose":"string","approxMinutes":4,"script":"string","cues":["string","string"]},{"id":"main","purpose":"string","approxMinutes":12,"script":"string","cues":["string","string","string"]},{"id":"closing","purpose":"string","approxMinutes":4,"script":"string","cues":["string","string"]}],"freshnessNotes":{"openingDifference":"string","mainDifference":"string","closingDifference":"string"},"safetyChecks":{"sleepSafe":true,"nonImitative":true,"beginnerFriendly":true,"freshVsRecentHistory":true}}',
         "The title should be short and calm.",

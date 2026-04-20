@@ -7,7 +7,7 @@ const howItWorks = [
   {
     title: "Start with the easiest path",
     description:
-      "Open tonight’s recommended session right away, or customize focus, soundscape, and length if you want more control.",
+      "Open tonight’s recommended session right away, or choose a different Sleep Experience and time if you want more control.",
   },
   {
     title: "Settle into calmer guidance",
