@@ -33,7 +33,7 @@ export function LoginForm() {
         disabled={pending}
         className="w-full rounded-full bg-emerald-400 px-5 py-3 font-medium text-stone-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {pending ? "Sending magic link..." : "Email me a magic link"}
+        {pending ? "Sending your link..." : "Continue with email"}
       </button>
 
       {state.status !== "idle" && state.message ? (

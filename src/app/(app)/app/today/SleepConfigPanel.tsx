@@ -670,7 +670,7 @@ export function SleepConfigPanel({
         <>
           <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
             <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Best for tonight</p>
+              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Quick start</p>
               <h3 className="text-xl font-semibold text-stone-50">{spokenTitle}</h3>
               <p className="text-sm text-stone-300">
                 {recommendedFocusLabel} · {recommendedSoundLabel} · {defaultLength} minutes
@@ -682,12 +682,12 @@ export function SleepConfigPanel({
               onClick={handleStartRecommended}
               className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Start now
+              Start recommended session
             </button>
 
             {speechAvailable ? (
               <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
-                Voice guidance is included in tonight&apos;s session.
+                Voice guidance is ready for tonight&apos;s session.
               </div>
             ) : (
               <p className="text-xs text-stone-400">
@@ -698,8 +698,8 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
             {lastSession
-              ? `Last completed: ${lastSession.focusLabel} with ${lastSession.soundLabel.toLowerCase()} for ${lastSession.lengthMinutes} minutes on ${formatCompletedAt(lastSession.completedAt)}.`
-              : `BigMind remembers your last completed setup so starting again feels easier next time.`}
+              ? `Last completed: ${lastSession.focusLabel} · ${lastSession.soundLabel} · ${lastSession.lengthMinutes} min · ${formatCompletedAt(lastSession.completedAt)}.`
+              : `BigMind remembers your last completed setup so it is easier to start again.`}
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
@@ -708,7 +708,12 @@ export function SleepConfigPanel({
               onClick={() => setShowCustomization((current) => !current)}
               className="flex w-full items-center justify-between text-left text-sm font-medium text-stone-100"
             >
-              <span>Adjust tonight&apos;s session</span>
+              <div>
+                <span>Customize focus, sound, and length</span>
+                <p className="mt-1 text-xs font-normal text-stone-400">
+                  {focusLabel} · {soundLabel} · {length} min
+                </p>
+              </div>
               <span className="text-stone-400">{showCustomization ? "Hide" : "Show"}</span>
             </button>
 
@@ -763,7 +768,7 @@ export function SleepConfigPanel({
                   type="submit"
                   className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
                 >
-                  Start this session
+                  Start custom session
                 </button>
               </form>
             ) : null}
