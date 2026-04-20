@@ -411,15 +411,6 @@ function formatSeconds(seconds: number) {
   return `${minutes}:${String(remaining).padStart(2, "0")}`;
 }
 
-function formatCompletedAt(value: string) {
-  return new Date(value).toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function persistSleepSessionCookie(record: PersistedSleepSessionState) {
   if (typeof document === "undefined") {
     return;
@@ -568,7 +559,6 @@ export function SleepConfigPanel({
   );
   const [length, setLength] = useState(rememberedLength ?? defaultLength);
   const [view, setView] = useState<"config" | "active" | "complete">("config");
-  const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(rememberedLength ?? defaultLength) * 60);
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
@@ -763,7 +753,6 @@ export function SleepConfigPanel({
     setStartedAt(null);
     setSaveState("idle");
     setView("config");
-    setShowCustomization(false);
     setExperienceKey(fallbackKey);
     setLength(String(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength));
     setRemainingSeconds(
@@ -776,114 +765,87 @@ export function SleepConfigPanel({
     <div className="space-y-4">
       {view === "config" ? (
         <>
-          <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
-            <div className="space-y-2">
-              <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Quick start</p>
-              <h3 className="text-xl font-semibold text-stone-50">{recommendedExperience.title}</h3>
-              <p className="text-sm text-stone-300">
-                {recommendedExperience.kindLabel} · {defaultLength} minutes
-              </p>
-              <p className="text-sm text-stone-300">{recommendedExperience.summary}</p>
-            </div>
+          <button
+            type="button"
+            onClick={handleStartRecommended}
+            className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
+          >
+            Start Recommended Session
+          </button>
 
-            <button
-              type="button"
-              onClick={handleStartRecommended}
-              className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
-            >
-              Start recommended experience
-            </button>
-
-            <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
+          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
+            <p className="text-sm uppercase tracking-[0.2em] text-stone-500">About Tonight&apos;s Recommendation</p>
+            <h3 className="mt-3 text-xl font-semibold text-stone-50">{recommendedExperience.title}</h3>
+            <p className="mt-2 text-sm text-stone-400">
+              {recommendedExperience.kindLabel} · {defaultLength} minutes
+            </p>
+            <p className="mt-4">{recommendedExperience.summary}</p>
+            <div className="mt-4 rounded-2xl border border-stone-800 bg-stone-950/60 px-4 py-3 text-sm text-stone-200">
               {recommendedExperience.voiceEnabled
                 ? "This experience includes spoken guidance."
                 : "This is a soundscape-only experience with no spoken guidance."}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
-            {lastSession
-              ? `Last completed: ${lastSession.focusLabel} · ${lastSession.soundLabel} · ${lastSession.lengthMinutes} min · ${formatCompletedAt(lastSession.completedAt)}.`
-              : `BigMind remembers your last completed setup so it is easier to start again.`}
-          </div>
+          <form onSubmit={handleStartCustom} className="space-y-4 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-200">
+            <div className="space-y-2">
+              <p className="font-medium text-stone-100">Sleep Experience</p>
+              <select
+                value={experienceKey}
+                onChange={(event) => setExperienceKey(event.target.value as SleepExperienceKey)}
+                className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
+              >
+                <optgroup label="Meditations">
+                  {experienceGroups.meditations.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Stories">
+                  {experienceGroups.stories.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Soundscapes">
+                  {experienceGroups.soundscapes.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.title}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
 
-          <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+            <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-4 text-sm text-stone-300">
+              <p className="font-medium text-stone-100">{selectedExperience.kindLabel}</p>
+              <p className="mt-2">{selectedExperience.summary}</p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-medium text-stone-100">Time</p>
+              <select
+                value={length}
+                onChange={(event) => setLength(event.target.value)}
+                className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
+              >
+                {lengthOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <button
-              type="button"
-              onClick={() => setShowCustomization((current) => !current)}
-              className="flex w-full items-center justify-between text-left text-sm font-medium text-stone-100"
+              type="submit"
+              className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
             >
-              <div>
-                <span>Choose Sleep Experience and time</span>
-                <p className="mt-1 text-xs font-normal text-stone-400">
-                  {selectedExperience.title} · {length} min
-                </p>
-              </div>
-              <span className="text-stone-400">{showCustomization ? "Hide" : "Show"}</span>
+              Start this experience
             </button>
-
-            {showCustomization ? (
-              <form onSubmit={handleStartCustom} className="mt-4 space-y-4 text-sm text-stone-200">
-                <div className="space-y-2">
-                  <p className="font-medium text-stone-100">Sleep Experience</p>
-                  <select
-                    value={experienceKey}
-                    onChange={(event) => setExperienceKey(event.target.value as SleepExperienceKey)}
-                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-                  >
-                    <optgroup label="Meditations">
-                      {experienceGroups.meditations.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.title}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Stories">
-                      {experienceGroups.stories.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.title}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Soundscapes">
-                      {experienceGroups.soundscapes.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.title}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-4 text-sm text-stone-300">
-                  <p className="font-medium text-stone-100">{selectedExperience.kindLabel}</p>
-                  <p className="mt-2">{selectedExperience.summary}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="font-medium text-stone-100">Time</p>
-                  <select
-                    value={length}
-                    onChange={(event) => setLength(event.target.value)}
-                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-                  >
-                    {lengthOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
-                >
-                  Start this experience
-                </button>
-              </form>
-            ) : null}
-          </div>
+          </form>
         </>
       ) : null}
 
