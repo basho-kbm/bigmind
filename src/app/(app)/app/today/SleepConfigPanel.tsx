@@ -714,10 +714,6 @@ export function SleepConfigPanel({
     setView("active");
   }
 
-  function handleStartRecommended() {
-    beginSession(recommendedExperience.value, defaultLength);
-  }
-
   function handleStartCustom(event: React.FormEvent) {
     event.preventDefault();
     beginSession(experienceKey, length);
