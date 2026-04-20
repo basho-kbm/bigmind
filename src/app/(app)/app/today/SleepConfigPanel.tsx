@@ -815,7 +815,7 @@ export function SleepConfigPanel({
 
             <button
               type="submit"
-              className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
+              className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
             >
               Start this experience
             </button>
