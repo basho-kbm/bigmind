@@ -568,6 +568,7 @@ export function SleepConfigPanel({
   const [isPending, startTransition] = useTransition();
   const spokenPhaseRef = useRef<number | null>(null);
   const speechUnlockedRef = useRef(false);
+  const speechStartTimeoutRef = useRef<number | null>(null);
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   const selectedExperience =
@@ -673,6 +674,7 @@ export function SleepConfigPanel({
 
       const utterance = new SpeechSynthesisUtterance(trimmedPrompt);
       const speechSettings = getSpeechSettings(voiceDirection);
+      let didStart = false;
       utterance.lang = preferredVoice?.lang || "en-US";
 
       if (preferredVoice) {
@@ -682,13 +684,37 @@ export function SleepConfigPanel({
       utterance.rate = speechSettings.rate;
       utterance.pitch = speechSettings.pitch;
       utterance.volume = speechSettings.volume;
-      utterance.onstart = () => setSpeechError(null);
-      utterance.onerror = () => setSpeechError("Voice guidance could not start on this device yet.");
+      utterance.onstart = () => {
+        didStart = true;
+        setSpeechError(null);
 
-      window.setTimeout(() => {
-        synth.speak(utterance);
-        synth.resume();
-      }, 40);
+        if (speechStartTimeoutRef.current !== null) {
+          window.clearTimeout(speechStartTimeoutRef.current);
+          speechStartTimeoutRef.current = null;
+        }
+      };
+      utterance.onerror = () => {
+        didStart = true;
+        setSpeechError("Voice guidance could not start on this device yet.");
+
+        if (speechStartTimeoutRef.current !== null) {
+          window.clearTimeout(speechStartTimeoutRef.current);
+          speechStartTimeoutRef.current = null;
+        }
+      };
+
+      synth.speak(utterance);
+      synth.resume();
+
+      if (speechStartTimeoutRef.current !== null) {
+        window.clearTimeout(speechStartTimeoutRef.current);
+      }
+
+      speechStartTimeoutRef.current = window.setTimeout(() => {
+        if (!didStart && !synth.speaking && !synth.pending) {
+          setSpeechError("Voice guidance did not start. Try tapping start again.");
+        }
+      }, 1200);
     },
     [getPreferredVoice, speechAvailable, unlockSpeech],
   );
@@ -773,6 +799,10 @@ export function SleepConfigPanel({
 
   useEffect(() => {
     return () => {
+      if (speechStartTimeoutRef.current !== null) {
+        window.clearTimeout(speechStartTimeoutRef.current);
+      }
+
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
