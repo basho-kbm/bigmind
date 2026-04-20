@@ -24,14 +24,6 @@ export default async function TodayPage() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Tonight</p>
-        <h2 className="text-3xl font-semibold tracking-tight">Configure your own sleep experience.</h2>
-        <p className="max-w-2xl text-stone-300">
-          Pick a meditation, story, or soundscape, then start tonight’s session.
-        </p>
-      </section>
-
       <section className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
         <p className="text-sm uppercase tracking-[0.2em] text-stone-500">About Tonight&apos;s Recommendation</p>
         <h3 className="mt-3 text-xl font-semibold text-stone-50">{session.spokenTrack.title}</h3>
@@ -42,6 +34,14 @@ export default async function TodayPage() {
         <div className="mt-4 rounded-2xl border border-stone-800 bg-stone-950/60 px-4 py-3 text-sm text-stone-200">
           This experience includes spoken guidance.
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Tonight</p>
+        <h2 className="text-3xl font-semibold tracking-tight">Configure your own sleep experience.</h2>
+        <p className="max-w-2xl text-stone-300">
+          Pick a meditation, story, or soundscape, then start tonight’s session.
+        </p>
       </section>
 
       <section>
