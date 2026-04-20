@@ -17,27 +17,22 @@ import {
 
 import { recordSleepSessionCompletion } from "./actions";
 
-const focusOptions = [
-  { value: "body_scan", label: "Body scan" },
-  { value: "open_awareness", label: "Open awareness" },
-  { value: "breath", label: "Breath awareness" },
-  { value: "zen_self", label: "Zen teaching: self" },
-  { value: "zen_impermanence", label: "Zen teaching: impermanence" },
-  { value: "zen_emptiness", label: "Zen teaching: emptiness" },
-  { value: "zen_beginner", label: "Zen teaching: beginner's mind" },
-  { value: "zen_stories", label: "Zen stories" },
-] as const;
+const spokenOrder: SleepFocusKey[] = [
+  "body_scan",
+  "open_awareness",
+  "breath",
+  "zen_self",
+  "zen_impermanence",
+  "zen_emptiness",
+  "zen_beginner",
+  "zen_stories",
+];
 
-const soundOptions = [
-  { value: "ocean", label: "Ocean" },
-  { value: "forest", label: "Forest" },
-  { value: "orchestra", label: "Orchestra warm-up" },
-  { value: "jungle", label: "Jungle" },
-] as const;
+const soundscapeOrder: SoundscapeKey[] = ["ocean", "forest", "orchestra", "jungle"];
 
 const lengthOptions = [
   { value: "10", label: "10 minutes" },
-  { value: "20", label: "20 minutes (recommended)" },
+  { value: "20", label: "20 minutes" },
   { value: "30", label: "30 minutes" },
 ] as const;
 
@@ -78,7 +73,7 @@ const fallbackFocusContent: Record<
     structure: [
       "Settle the body first so the teaching lands softly.",
       "Hear a short reflection on loosening self-story.",
-      "Return to breath and sound without needing to resolve anything.",
+      "Return to stillness without needing to resolve anything.",
     ],
   },
   zen_impermanence: {
@@ -96,7 +91,7 @@ const fallbackFocusContent: Record<
     structure: [
       "Relax the body into the bed.",
       "Hear a short reflection on roominess and non-grasping.",
-      "Let sound and breath carry the rest.",
+      "Let spaciousness do some of the easing.",
     ],
   },
   zen_beginner: {
@@ -114,26 +109,38 @@ const fallbackFocusContent: Record<
     structure: [
       "Listen to a short story without trying to interpret it too hard.",
       "Let one simple takeaway land lightly.",
-      "Fade back into breath and sound.",
+      "Fade back into quiet.",
     ],
   },
+};
+
+type SleepExperienceKey = SleepFocusKey | SoundscapeKey;
+type SleepExperienceKind = "meditation" | "story" | "soundscape";
+
+type SleepExperienceOption = {
+  value: SleepExperienceKey;
+  title: string;
+  kind: SleepExperienceKind;
+  kindLabel: string;
+  summary: string;
+  previewLine: string;
+  details: string[];
+  defaultLength: string;
+  voiceEnabled: boolean;
+  voiceDirection?: DailyVoiceDirection;
+  sections?: DailySpokenSection[];
 };
 
 type SleepConfigPanelProps = {
   dateKey: string;
   dateLabel: string;
-  defaultFocus?: SleepFocusKey;
-  defaultSound?: SoundscapeKey;
+  defaultExperienceKey?: SleepExperienceKey;
   defaultLength?: string;
-  rememberedFocus?: SleepFocusKey;
-  rememberedSound?: SoundscapeKey;
+  rememberedExperienceKey?: string;
   rememberedLength?: string;
   initialLastSession?: PersistedSleepSessionState | null;
   dailySpokenTracksByFocus: Record<SleepFocusKey, DailySpokenTrack>;
   dailySoundscapesByKey: Record<SoundscapeKey, DailySoundscape>;
-  spokenTitle: string;
-  openingLine: string;
-  structure: string[];
 };
 
 const LAST_SESSION_STORAGE_KEY = "bigmind:last-sleep-session";
@@ -147,9 +154,24 @@ type SessionGuidanceSegment = {
 
 type SessionContent = {
   title: string;
+  kindLabel: string;
+  summary: string;
   prompts: SessionGuidanceSegment[];
   voiceDirection?: DailyVoiceDirection;
+  voiceEnabled: boolean;
+  restingNote: string;
 };
+
+function getKindLabel(kind: SleepExperienceKind) {
+  switch (kind) {
+    case "meditation":
+      return "Meditation";
+    case "story":
+      return "Story";
+    case "soundscape":
+      return "Soundscape";
+  }
+}
 
 function normalizeCueText(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -263,7 +285,7 @@ function buildFallbackSectionsFromTrack(track: {
     },
     {
       id: "main",
-      purpose: track.structure[1] ?? track.structure[0] ?? "continue the guided meditation",
+      purpose: track.structure[1] ?? track.structure[0] ?? "continue the sleep experience",
       approxMinutes: 12,
       script: [track.structure[0], track.structure[1]].filter(Boolean).join(" "),
       cues: buildCueTexts([track.structure[0], track.structure[1]].filter(Boolean).join(" "), 12),
@@ -281,37 +303,27 @@ function buildFallbackSectionsFromTrack(track: {
 function buildGuidanceSegments(
   track: { openingLine: string; structure: string[]; sections?: DailySpokenSection[] },
   totalSeconds: number,
-  soundscapeTitle: string,
 ): SessionGuidanceSegment[] {
-  const baseSections = track.sections?.length === 3 ? track.sections : buildFallbackSectionsFromTrack(track);
-  const normalizedSections = baseSections.map((section, index) => {
-    const sectionCueTexts = section.cues?.filter(Boolean).slice(0, 5) ?? buildCueTexts(section.script, section.approxMinutes);
-    const cues = sectionCueTexts.length > 0 ? sectionCueTexts : [section.script];
-
-    return {
-      ...section,
-      script:
-        index === baseSections.length - 1
-          ? `${section.script} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
-          : section.script,
-      cues:
-        index === baseSections.length - 1
-          ? cues.map((cue, cueIndex) =>
-              cueIndex === cues.length - 1
-                ? `${cue} Let ${soundscapeTitle.toLowerCase()} carry the rest of the night without pressure.`
-                : cue,
-            )
-          : cues,
-    };
-  });
-  const totalApproxMinutes = normalizedSections.reduce((sum, section) => sum + Math.max(section.approxMinutes, 1), 0);
+  const baseSections =
+    track.sections?.length === 3 ? track.sections : buildFallbackSectionsFromTrack(track);
+  const normalizedSections = baseSections.map((section) => ({
+    ...section,
+    cues:
+      section.cues?.filter(Boolean).slice(0, 5) ?? buildCueTexts(section.script, section.approxMinutes),
+  }));
+  const totalApproxMinutes = normalizedSections.reduce(
+    (sum, section) => sum + Math.max(section.approxMinutes, 1),
+    0,
+  );
 
   let assignedSectionSeconds = 0;
   const prompts: SessionGuidanceSegment[] = [];
 
   normalizedSections.forEach((section, sectionIndex) => {
     const remainingSections = normalizedSections.length - sectionIndex;
-    const rawSectionSeconds = Math.round((Math.max(section.approxMinutes, 1) / totalApproxMinutes) * totalSeconds);
+    const rawSectionSeconds = Math.round(
+      (Math.max(section.approxMinutes, 1) / totalApproxMinutes) * totalSeconds,
+    );
     const sectionDurationSeconds =
       sectionIndex === normalizedSections.length - 1
         ? Math.max(45, totalSeconds - assignedSectionSeconds)
@@ -328,7 +340,10 @@ function buildGuidanceSegments(
     const cueTexts = section.cues?.length ? section.cues : [section.script];
     const cueWeights = cueTexts.map((cue) => Math.max(8, cue.split(/\s+/).filter(Boolean).length));
     const totalCueWeight = cueWeights.reduce((sum, weight) => sum + weight, 0);
-    const minCueSeconds = Math.max(18, Math.floor(sectionDurationSeconds / Math.max(cueTexts.length * 2, 1)));
+    const minCueSeconds = Math.max(
+      18,
+      Math.floor(sectionDurationSeconds / Math.max(cueTexts.length * 2, 1)),
+    );
     let assignedCueSeconds = 0;
 
     cueTexts.forEach((cue, cueIndex) => {
@@ -404,90 +419,168 @@ function persistLastSession(record: PersistedSleepSessionState) {
   window.localStorage.setItem(LAST_SESSION_STORAGE_KEY, JSON.stringify(record));
 }
 
+function buildExperienceOptions(params: {
+  dailySpokenTracksByFocus: Record<SleepFocusKey, DailySpokenTrack>;
+  dailySoundscapesByKey: Record<SoundscapeKey, DailySoundscape>;
+}) {
+  const meditations: SleepExperienceOption[] = [];
+  const stories: SleepExperienceOption[] = [];
+  const soundscapes: SleepExperienceOption[] = [];
+
+  spokenOrder.forEach((focus) => {
+    const fallback = fallbackFocusContent[focus];
+    const track = params.dailySpokenTracksByFocus[focus] ?? {
+      title: fallback.title,
+      openingLine: fallback.openingLine,
+      structure: fallback.structure,
+      durationMinutes: 20,
+      summary: fallback.structure.join(" "),
+      voiceDirection: undefined,
+      sections: undefined,
+    };
+    const kind: SleepExperienceKind = focus === "zen_stories" ? "story" : "meditation";
+    const option: SleepExperienceOption = {
+      value: focus,
+      title: track.title,
+      kind,
+      kindLabel: getKindLabel(kind),
+      summary: track.summary,
+      previewLine: track.openingLine,
+      details: track.structure,
+      defaultLength: String(track.durationMinutes ?? 20),
+      voiceEnabled: true,
+      voiceDirection: track.voiceDirection,
+      sections: track.sections,
+    };
+
+    if (kind === "story") {
+      stories.push(option);
+      return;
+    }
+
+    meditations.push(option);
+  });
+
+  soundscapeOrder.forEach((key) => {
+    const soundscape = params.dailySoundscapesByKey[key];
+
+    soundscapes.push({
+      value: key,
+      title: soundscape.title,
+      kind: "soundscape",
+      kindLabel: getKindLabel("soundscape"),
+      summary: soundscape.description,
+      previewLine: soundscape.description,
+      details: soundscape.texture,
+      defaultLength: "20",
+      voiceEnabled: false,
+    });
+  });
+
+  return {
+    all: [...meditations, ...stories, ...soundscapes],
+    meditations,
+    stories,
+    soundscapes,
+  };
+}
+
+function buildSessionContent(option: SleepExperienceOption, totalSeconds: number): SessionContent {
+  if (option.kind === "soundscape") {
+    return {
+      title: option.title,
+      kindLabel: option.kindLabel,
+      summary: option.summary,
+      prompts: [
+        {
+          id: "soundscape",
+          purpose: "soundscape only",
+          durationSeconds: totalSeconds,
+          text: `Let ${option.title.toLowerCase()} fill the room. Nothing else to follow tonight.`,
+        },
+      ],
+      voiceEnabled: false,
+      restingNote: "This is a soundscape-only experience. Let the sound do the work.",
+    };
+  }
+
+  return {
+    title: option.title,
+    kindLabel: option.kindLabel,
+    summary: option.summary,
+    prompts: buildGuidanceSegments(
+      {
+        openingLine: option.previewLine,
+        structure: option.details,
+        sections: option.sections,
+      },
+      totalSeconds,
+    ),
+    voiceDirection: option.voiceDirection,
+    voiceEnabled: true,
+    restingNote: "Let this feel easy. You do not need to do it perfectly.",
+  };
+}
+
 export function SleepConfigPanel({
   dateKey,
   dateLabel,
-  defaultFocus = "body_scan",
-  defaultSound = "ocean",
+  defaultExperienceKey = "body_scan",
   defaultLength = "20",
-  rememberedFocus,
-  rememberedSound,
+  rememberedExperienceKey,
   rememberedLength,
   initialLastSession = null,
   dailySpokenTracksByFocus,
   dailySoundscapesByKey,
-  spokenTitle,
-  openingLine,
-  structure,
 }: SleepConfigPanelProps) {
-  const [focus, setFocus] = useState(rememberedFocus ?? defaultFocus);
-  const [sound, setSound] = useState(rememberedSound ?? defaultSound);
+  const experienceGroups = useMemo(
+    () => buildExperienceOptions({ dailySpokenTracksByFocus, dailySoundscapesByKey }),
+    [dailySoundscapesByKey, dailySpokenTracksByFocus],
+  );
+
+  const recommendedExperience =
+    experienceGroups.all.find((option) => option.value === defaultExperienceKey) ?? experienceGroups.all[0];
+  const fallbackExperienceKey = recommendedExperience?.value ?? "body_scan";
+  const rememberedKeyIsValid = experienceGroups.all.some(
+    (option) => option.value === rememberedExperienceKey,
+  );
+
+  const [experienceKey, setExperienceKey] = useState<SleepExperienceKey>(
+    (rememberedKeyIsValid ? (rememberedExperienceKey as SleepExperienceKey) : undefined) ??
+      fallbackExperienceKey,
+  );
   const [length, setLength] = useState(rememberedLength ?? defaultLength);
   const [view, setView] = useState<"config" | "active" | "complete">("config");
   const [showCustomization, setShowCustomization] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(Number(rememberedLength ?? defaultLength) * 60);
-  const [speechEnabled] = useState(true);
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "local-only">("idle");
   const [isPending, startTransition] = useTransition();
   const spokenPhaseRef = useRef<number | null>(null);
 
+  const selectedExperience =
+    experienceGroups.all.find((option) => option.value === experienceKey) ?? recommendedExperience;
   const totalSeconds = Math.max(60, Number(length) * 60);
   const speechAvailable = typeof window !== "undefined" && "speechSynthesis" in window;
 
-  const focusLabel = focusOptions.find((option) => option.value === focus)?.label ?? "Body scan";
-  const soundLabel = soundOptions.find((option) => option.value === sound)?.label ?? "Ocean";
-  const recommendedFocusLabel =
-    focusOptions.find((option) => option.value === defaultFocus)?.label ?? "Body scan";
-  const recommendedSoundLabel =
-    soundOptions.find((option) => option.value === defaultSound)?.label ?? "Ocean";
-
-  const buildSessionContent = useCallback(
-    (nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string): SessionContent => {
-      const fallback = fallbackFocusContent[nextFocus];
-      const nextTrack = dailySpokenTracksByFocus[nextFocus] ?? {
-        title: nextFocus === defaultFocus ? spokenTitle : fallback.title,
-        openingLine: nextFocus === defaultFocus ? openingLine : fallback.openingLine,
-        structure: nextFocus === defaultFocus ? structure : fallback.structure,
-        sections: undefined,
-        voiceDirection: undefined,
-      };
-      const nextSoundLabel =
-        soundOptions.find((option) => option.value === nextSound)?.label ?? "Ocean";
-      const nextSoundscapeTitle = dailySoundscapesByKey[nextSound]?.title;
-      const totalSessionSeconds = Math.max(60, Number(nextLength) * 60);
-
-      return {
-        title: nextTrack.title,
-        voiceDirection: nextTrack.voiceDirection,
-        prompts: buildGuidanceSegments(
-          nextTrack,
-          totalSessionSeconds,
-          nextSoundscapeTitle ?? nextSoundLabel,
-        ),
-      };
-    },
-    [dailySoundscapesByKey, dailySpokenTracksByFocus, defaultFocus, openingLine, spokenTitle, structure],
-  );
-
   const sessionContent = useMemo(
-    () => buildSessionContent(focus, sound, length),
-    [buildSessionContent, focus, sound, length],
+    () => buildSessionContent(selectedExperience, totalSeconds),
+    [selectedExperience, totalSeconds],
   );
-
+  const speechEnabled = sessionContent.voiceEnabled && speechAvailable;
   const progressPercent = Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100);
   const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
   const currentPromptIndex = getCurrentPromptIndex(sessionContent.prompts, elapsedSeconds);
-  const currentPrompt = sessionContent.prompts[currentPromptIndex]?.text ?? sessionContent.prompts[0]?.text ?? "";
+  const currentPrompt =
+    sessionContent.prompts[currentPromptIndex]?.text ?? sessionContent.prompts[0]?.text ?? "";
   const currentPromptPurpose =
     sessionContent.prompts[currentPromptIndex]?.purpose ?? sessionContent.prompts[0]?.purpose ?? "";
-  const currentVoiceDirection = sessionContent.voiceDirection;
 
   const speakPrompt = useCallback(
     (prompt: string, voiceDirection?: DailyVoiceDirection) => {
-      if (!speechAvailable || !speechEnabled || typeof window === "undefined") {
+      if (!speechAvailable || !sessionContent.voiceEnabled || typeof window === "undefined") {
         return;
       }
 
@@ -501,7 +594,7 @@ export function SleepConfigPanel({
 
       window.speechSynthesis.speak(utterance);
     },
-    [speechAvailable, speechEnabled],
+    [sessionContent.voiceEnabled, speechAvailable],
   );
 
   const handleComplete = useCallback(() => {
@@ -512,10 +605,10 @@ export function SleepConfigPanel({
     const record: PersistedSleepSessionState = {
       dateKey,
       dateLabel,
-      focus,
-      focusLabel,
-      sound,
-      soundLabel,
+      focus: selectedExperience.value,
+      focusLabel: selectedExperience.title,
+      sound: selectedExperience.kind,
+      soundLabel: selectedExperience.kindLabel,
       lengthMinutes: Number(length),
       completedAt: new Date().toISOString(),
     };
@@ -536,18 +629,7 @@ export function SleepConfigPanel({
 
       setSaveState(result.ok ? "saved" : "local-only");
     });
-  }, [
-    dateKey,
-    dateLabel,
-    focus,
-    focusLabel,
-    length,
-    sound,
-    soundLabel,
-    speechEnabled,
-    startedAt,
-    startTransition,
-  ]);
+  }, [dateKey, dateLabel, length, selectedExperience, speechEnabled, startedAt, startTransition]);
 
   useEffect(() => {
     if (view !== "active" || isPaused) {
@@ -570,7 +652,7 @@ export function SleepConfigPanel({
   }, [handleComplete, isPaused, view]);
 
   useEffect(() => {
-    if (view !== "active") {
+    if (view !== "active" || !sessionContent.voiceEnabled) {
       return;
     }
 
@@ -579,20 +661,19 @@ export function SleepConfigPanel({
     }
 
     spokenPhaseRef.current = currentPromptIndex;
-
-    speakPrompt(currentPrompt, currentVoiceDirection);
-  }, [currentPrompt, currentPromptIndex, currentVoiceDirection, speakPrompt, view]);
+    speakPrompt(currentPrompt, sessionContent.voiceDirection);
+  }, [currentPrompt, currentPromptIndex, sessionContent, speakPrompt, view]);
 
   useEffect(() => {
-    if (!speechEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
+    if (!sessionContent.voiceEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       return;
     }
 
-    if (speechEnabled && view === "active") {
-      window.setTimeout(() => speakPrompt(currentPrompt, currentVoiceDirection), 0);
+    if (sessionContent.voiceEnabled && view === "active") {
+      window.setTimeout(() => speakPrompt(currentPrompt, sessionContent.voiceDirection), 0);
     }
-  }, [currentPrompt, currentVoiceDirection, speakPrompt, speechEnabled, view]);
+  }, [currentPrompt, sessionContent, speakPrompt, view]);
 
   useEffect(() => {
     return () => {
@@ -602,33 +683,37 @@ export function SleepConfigPanel({
     };
   }, []);
 
-  function beginSession(nextFocus: SleepFocusKey, nextSound: SoundscapeKey, nextLength: string) {
-    const nextContent = buildSessionContent(nextFocus, nextSound, nextLength);
+  function beginSession(nextExperienceKey: SleepExperienceKey, nextLength: string) {
+    const nextExperience =
+      experienceGroups.all.find((option) => option.value === nextExperienceKey) ?? recommendedExperience;
+    const nextContent = buildSessionContent(nextExperience, Math.max(60, Number(nextLength) * 60));
 
-    if (speechAvailable && speechEnabled) {
+    if (nextContent.voiceEnabled && speechAvailable) {
       spokenPhaseRef.current = 0;
       speakPrompt(nextContent.prompts[0]?.text ?? "", nextContent.voiceDirection);
     } else {
       spokenPhaseRef.current = null;
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     }
 
-    setFocus(nextFocus);
-    setSound(nextSound);
-    setLength(nextLength);
+    setExperienceKey(nextExperienceKey);
     setStartedAt(new Date().toISOString());
     setSaveState("idle");
     setRemainingSeconds(Math.max(60, Number(nextLength) * 60));
+    setLength(nextLength);
     setIsPaused(false);
     setView("active");
   }
 
   function handleStartRecommended() {
-    beginSession(defaultFocus, defaultSound, defaultLength);
+    beginSession(recommendedExperience.value, defaultLength);
   }
 
   function handleStartCustom(event: React.FormEvent) {
     event.preventDefault();
-    beginSession(focus, sound, length);
+    beginSession(experienceKey, length);
   }
 
   function handlePauseToggle() {
@@ -638,7 +723,9 @@ export function SleepConfigPanel({
 
     if (isPaused) {
       setIsPaused(false);
-      window.setTimeout(() => speakPrompt(currentPrompt, currentVoiceDirection), 0);
+      if (sessionContent.voiceEnabled) {
+        window.setTimeout(() => speakPrompt(currentPrompt, sessionContent.voiceDirection), 0);
+      }
       return;
     }
 
@@ -650,13 +737,17 @@ export function SleepConfigPanel({
   }
 
   function handleReset() {
+    const fallbackKey =
+      lastSession && experienceGroups.all.some((option) => option.value === lastSession.focus)
+        ? (lastSession.focus as SleepExperienceKey)
+        : fallbackExperienceKey;
+
     spokenPhaseRef.current = null;
     setStartedAt(null);
     setSaveState("idle");
     setView("config");
     setShowCustomization(false);
-    setFocus(lastSession?.focus ?? rememberedFocus ?? defaultFocus);
-    setSound(lastSession?.sound ?? rememberedSound ?? defaultSound);
+    setExperienceKey(fallbackKey);
     setLength(String(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength));
     setRemainingSeconds(
       Math.max(60, Number(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength) * 60),
@@ -671,10 +762,11 @@ export function SleepConfigPanel({
           <div className="space-y-4 rounded-3xl border border-emerald-400/20 bg-emerald-400/5 p-5">
             <div className="space-y-2">
               <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Quick start</p>
-              <h3 className="text-xl font-semibold text-stone-50">{spokenTitle}</h3>
+              <h3 className="text-xl font-semibold text-stone-50">{recommendedExperience.title}</h3>
               <p className="text-sm text-stone-300">
-                {recommendedFocusLabel} · {recommendedSoundLabel} · {defaultLength} minutes
+                {recommendedExperience.kindLabel} · {defaultLength} minutes
               </p>
+              <p className="text-sm text-stone-300">{recommendedExperience.summary}</p>
             </div>
 
             <button
@@ -682,18 +774,14 @@ export function SleepConfigPanel({
               onClick={handleStartRecommended}
               className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300"
             >
-              Start recommended session
+              Start recommended experience
             </button>
 
-            {speechAvailable ? (
-              <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
-                Voice guidance is ready for tonight&apos;s session.
-              </div>
-            ) : (
-              <p className="text-xs text-stone-400">
-                Voice guidance is unavailable in this browser right now, so the session will run with on-screen guidance and a timer.
-              </p>
-            )}
+            <div className="rounded-2xl border border-stone-800 bg-stone-950/50 px-4 py-3 text-sm text-stone-200">
+              {recommendedExperience.voiceEnabled
+                ? "This experience includes spoken guidance."
+                : "This is a soundscape-only experience with no spoken guidance."}
+            </div>
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-xs text-stone-300">
@@ -709,9 +797,9 @@ export function SleepConfigPanel({
               className="flex w-full items-center justify-between text-left text-sm font-medium text-stone-100"
             >
               <div>
-                <span>Customize focus, sound, and length</span>
+                <span>Choose Sleep Experience and time</span>
                 <p className="mt-1 text-xs font-normal text-stone-400">
-                  {focusLabel} · {soundLabel} · {length} min
+                  {selectedExperience.title} · {length} min
                 </p>
               </div>
               <span className="text-stone-400">{showCustomization ? "Hide" : "Show"}</span>
@@ -720,37 +808,43 @@ export function SleepConfigPanel({
             {showCustomization ? (
               <form onSubmit={handleStartCustom} className="mt-4 space-y-4 text-sm text-stone-200">
                 <div className="space-y-2">
-                  <p className="font-medium text-stone-100">Focus</p>
+                  <p className="font-medium text-stone-100">Sleep Experience</p>
                   <select
-                    value={focus}
-                    onChange={(event) => setFocus(event.target.value as SleepFocusKey)}
+                    value={experienceKey}
+                    onChange={(event) => setExperienceKey(event.target.value as SleepExperienceKey)}
                     className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
                   >
-                    {focusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                    <optgroup label="Meditations">
+                      {experienceGroups.meditations.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Stories">
+                      {experienceGroups.stories.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Soundscapes">
+                      {experienceGroups.soundscapes.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="font-medium text-stone-100">Soundscape</p>
-                  <select
-                    value={sound}
-                    onChange={(event) => setSound(event.target.value as SoundscapeKey)}
-                    className="w-full rounded-2xl border border-stone-800 bg-stone-950/80 px-3 py-2 text-sm text-stone-100 outline-none ring-0 focus:border-emerald-400/60"
-                  >
-                    {soundOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-4 text-sm text-stone-300">
+                  <p className="font-medium text-stone-100">{selectedExperience.kindLabel}</p>
+                  <p className="mt-2">{selectedExperience.summary}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <p className="font-medium text-stone-100">Length</p>
+                  <p className="font-medium text-stone-100">Time</p>
                   <select
                     value={length}
                     onChange={(event) => setLength(event.target.value)}
@@ -768,7 +862,7 @@ export function SleepConfigPanel({
                   type="submit"
                   className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500"
                 >
-                  Start custom session
+                  Start this experience
                 </button>
               </form>
             ) : null}
@@ -782,7 +876,8 @@ export function SleepConfigPanel({
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Tonight&apos;s session</p>
             <h3 className="text-xl font-semibold text-stone-50">{sessionContent.title}</h3>
             <p className="text-sm text-stone-300">
-              {focusLabel} · {soundLabel} · {length} minutes{speechEnabled && speechAvailable ? " · voice guidance on" : ""}
+              {sessionContent.kindLabel} · {length} minutes
+              {speechEnabled ? " · voice guidance on" : " · soundscape only"}
             </p>
           </div>
 
@@ -807,7 +902,9 @@ export function SleepConfigPanel({
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Current guidance</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
+              {speechEnabled ? "Current guidance" : "Current experience"}
+            </p>
             {currentPromptPurpose ? (
               <p className="mt-3 text-xs uppercase tracking-[0.18em] text-stone-500">{currentPromptPurpose}</p>
             ) : null}
@@ -831,9 +928,7 @@ export function SleepConfigPanel({
             </button>
           </div>
 
-          <p className="text-xs text-stone-400">
-            Let this be easy. You do not need to do it perfectly.
-          </p>
+          <p className="text-xs text-stone-400">{sessionContent.restingNote}</p>
         </div>
       ) : null}
 
@@ -842,13 +937,11 @@ export function SleepConfigPanel({
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Session complete</p>
             <h3 className="text-xl font-semibold text-stone-50">You&apos;re done for tonight.</h3>
-            <p className="text-sm text-stone-300">
-              Come back tomorrow night for a fresh session.
-            </p>
+            <p className="text-sm text-stone-300">Come back tomorrow night for a fresh experience.</p>
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4 text-sm text-stone-300">
-            Completed {focusLabel.toLowerCase()} with {soundLabel.toLowerCase()} for {length} minutes on {dateLabel}.
+            Completed {selectedExperience.title} · {selectedExperience.kindLabel} · {length} minutes on {dateLabel}.
           </div>
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4 text-xs text-stone-300">
@@ -867,12 +960,11 @@ export function SleepConfigPanel({
               onClick={handleReset}
               className="w-full rounded-full bg-emerald-400 px-4 py-3 text-sm font-medium text-stone-950 transition hover:bg-emerald-300 sm:w-auto"
             >
-              Start another session
+              Start another experience
             </button>
           </div>
         </div>
       ) : null}
-
     </div>
   );
 }

@@ -1,13 +1,11 @@
-import type { SoundscapeKey, SleepFocusKey } from "@/lib/daily-content";
-
 export const SLEEP_SESSION_COOKIE_NAME = "bigmind-last-session";
 
 export type PersistedSleepSessionState = {
   dateKey: string;
   dateLabel: string;
-  focus: SleepFocusKey;
+  focus: string;
   focusLabel: string;
-  sound: SoundscapeKey;
+  sound: string;
   soundLabel: string;
   lengthMinutes: number;
   completedAt: string;

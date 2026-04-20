@@ -25,32 +25,30 @@ export default async function TodayPage() {
     <div className="space-y-6">
       <section className="space-y-3">
         <p className="text-sm uppercase tracking-[0.2em] text-emerald-200">Tonight</p>
-        <h2 className="text-3xl font-semibold tracking-tight">Choose your path for tonight.</h2>
+        <h2 className="text-3xl font-semibold tracking-tight">Choose one sleep experience and a time.</h2>
         <p className="max-w-2xl text-stone-300">
-          Start the recommended session now, or adjust focus, soundscape, and length first.
+          Pick a meditation, story, or soundscape, then start tonight’s session.
         </p>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Sleep meditation</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Recommended tonight</p>
           <p className="mt-2 text-base font-medium text-stone-100">{session.spokenTrack.title}</p>
         </div>
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Soundscape</p>
-          <p className="mt-2 text-base font-medium text-stone-100">{session.soundscape.title}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Type</p>
+          <p className="mt-2 text-base font-medium text-stone-100">Meditation</p>
         </div>
         <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Length</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Time</p>
           <p className="mt-2 text-base font-medium text-stone-100">{session.defaultLengthMinutes} min</p>
         </div>
       </section>
 
       {lastSession ? (
         <div className="rounded-2xl border border-stone-800 bg-stone-900/40 p-4 text-sm text-stone-300">
-          Last time you finished <strong>{lastSession.focusLabel}</strong> with{" "}
-          <strong>{lastSession.soundLabel.toLowerCase()}</strong> for{" "}
-          <strong>{lastSession.lengthMinutes} minutes</strong>.
+          Last time you finished <strong>{lastSession.focusLabel}</strong> for <strong>{lastSession.lengthMinutes} minutes</strong>.
         </div>
       ) : null}
 
@@ -60,30 +58,20 @@ export default async function TodayPage() {
             <p className="text-sm uppercase tracking-[0.2em] text-stone-500">Tonight’s recommendation</p>
             <h3 className="mt-3 text-2xl font-semibold">{session.spokenTrack.title}</h3>
             <p className="mt-2 text-sm text-stone-500">
-              {session.dateLabel} · {session.defaultLengthMinutes} minutes
+              Meditation · {session.dateLabel} · {session.defaultLengthMinutes} minutes
             </p>
             <p className="mt-4 text-sm leading-6 text-stone-300">{session.spokenTrack.summary}</p>
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Guidance</p>
-                <p className="mt-2 text-sm font-medium text-stone-100">{session.spokenTrack.openingLine}</p>
-                <ul className="mt-3 space-y-2 text-sm text-stone-300">
-                  {session.spokenTrack.structure.map((item) => (
-                    <li key={item}>• {item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-stone-500">Soundscape</p>
-                <p className="mt-2 text-sm font-medium text-stone-100">{session.soundscape.title}</p>
-                <p className="mt-2 text-sm text-stone-300">{session.soundscape.description}</p>
-                <p className="mt-3 text-xs text-stone-500">
-                  Texture: {session.soundscape.texture.join(" · ")}
-                </p>
-              </div>
+            <div className="mt-6 rounded-2xl border border-stone-800 bg-stone-900/60 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">What it includes</p>
+              <p className="mt-2 text-sm font-medium text-stone-100">{session.spokenTrack.openingLine}</p>
+              <ul className="mt-3 space-y-2 text-sm text-stone-300">
+                {session.spokenTrack.structure.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
             </div>
             <div className="mt-6 rounded-2xl border border-stone-800 bg-stone-900/60 p-4 text-sm text-stone-300">
-              Calm voice guidance, an easy sound bed, and a clear next step. {session.recommendationNote}
+              {session.recommendationNote} Other choices, including soundscapes and stories, are in the Sleep Experience menu.
             </div>
           </div>
         </div>
@@ -93,18 +81,13 @@ export default async function TodayPage() {
             <SleepConfigPanel
               dateKey={session.dateKey}
               dateLabel={session.dateLabel}
-              defaultFocus={session.spokenTrack.focus}
-              defaultSound={session.soundscape.key}
+              defaultExperienceKey={session.spokenTrack.focus}
               defaultLength={String(session.defaultLengthMinutes)}
-              rememberedFocus={lastSession?.focus}
-              rememberedSound={lastSession?.sound}
+              rememberedExperienceKey={lastSession?.focus}
               rememberedLength={lastSession ? String(lastSession.lengthMinutes) : undefined}
               initialLastSession={lastSession}
               dailySpokenTracksByFocus={library.spokenTracksByFocus}
               dailySoundscapesByKey={library.soundscapesByKey}
-              spokenTitle={session.spokenTrack.title}
-              openingLine={session.spokenTrack.openingLine}
-              structure={session.spokenTrack.structure}
             />
           </div>
         </div>
