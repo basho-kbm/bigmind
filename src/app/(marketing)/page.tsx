@@ -80,7 +80,7 @@ export default async function MarketingHome() {
     ? profile?.onboarding_completed
       ? "Continue tonight"
       : "Finish setup"
-    : "Start free tonight";
+    : "Start tonight";
   const secondaryLink = billing
     ? {
         href: "/app/settings",
@@ -88,7 +88,7 @@ export default async function MarketingHome() {
       }
     : {
         href: "/login",
-        label: "Already have an account? Log in",
+        label: "Log in",
       };
 
   return (
@@ -108,8 +108,8 @@ export default async function MarketingHome() {
               Fall asleep with sleep meditations, Zen stories, and calming soundscapes.
             </h1>
             <p className="text-lg text-stone-300 sm:text-xl">
-              {appConfig.name} helps tired minds settle faster with a simple nightly path, clear next
-              actions, and optional customization when you want it.
+              {appConfig.name} helps you start with tonight’s recommendation fast, or choose your
+              own Sleep Experience when you want more control.
             </p>
             {billing?.user.email ? (
               <p className="text-sm text-stone-400">Signed in as {billing.user.email}</p>
