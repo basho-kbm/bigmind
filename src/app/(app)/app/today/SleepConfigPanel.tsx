@@ -162,6 +162,20 @@ type SessionContent = {
   restingNote: string;
 };
 
+type RenderedAudioSegment = {
+  id: string;
+  durationSeconds: number;
+  audioUrl: string;
+};
+
+function base64ToBlobUrl(base64: string, mimeType: string) {
+  const binary = window.atob(base64);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const blob = new Blob([bytes], { type: mimeType });
+
+  return URL.createObjectURL(blob);
+}
+
 function getKindLabel(kind: SleepExperienceKind) {
   switch (kind) {
     case "meditation":
@@ -564,23 +578,23 @@ export function SleepConfigPanel({
   const [lastSession, setLastSession] = useState<PersistedSleepSessionState | null>(initialLastSession);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "local-only">("idle");
-  const [speechError, setSpeechError] = useState<string | null>(null);
+  const [voiceState, setVoiceState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const spokenPhaseRef = useRef<number | null>(null);
-  const speechUnlockedRef = useRef(false);
-  const speechStartTimeoutRef = useRef<number | null>(null);
-  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const audioObjectUrlsRef = useRef<string[]>([]);
+  const renderedAudioSegmentsRef = useRef<RenderedAudioSegment[]>([]);
 
   const selectedExperience =
     experienceGroups.all.find((option) => option.value === experienceKey) ?? recommendedExperience;
   const totalSeconds = Math.max(60, Number(length) * 60);
-  const speechAvailable = typeof window !== "undefined" && "speechSynthesis" in window;
 
   const sessionContent = useMemo(
     () => buildSessionContent(selectedExperience, totalSeconds),
     [selectedExperience, totalSeconds],
   );
-  const speechEnabled = sessionContent.voiceEnabled && speechAvailable;
+  const voiceGuidanceEnabled = sessionContent.voiceEnabled;
   const progressPercent = Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100);
   const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
   const currentPromptIndex = getCurrentPromptIndex(sessionContent.prompts, elapsedSeconds);
@@ -589,139 +603,114 @@ export function SleepConfigPanel({
   const currentPromptPurpose =
     sessionContent.prompts[currentPromptIndex]?.purpose ?? sessionContent.prompts[0]?.purpose ?? "";
 
-  useEffect(() => {
-    if (!speechAvailable || typeof window === "undefined") {
-      voicesRef.current = [];
+  const clearRenderedAudio = useCallback(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.removeAttribute("src");
+      audioElementRef.current.load();
+    }
+
+    audioObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    audioObjectUrlsRef.current = [];
+    renderedAudioSegmentsRef.current = [];
+    spokenPhaseRef.current = null;
+  }, []);
+
+  const requestRenderedAudio = useCallback(async (
+    prompts: SessionGuidanceSegment[],
+    voiceDirection?: DailyVoiceDirection,
+  ) => {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const synth = window.speechSynthesis;
-    const loadVoices = () => {
-      voicesRef.current = synth.getVoices();
-    };
+    setVoiceState("loading");
+    setVoiceError(null);
 
-    loadVoices();
-    synth.addEventListener("voiceschanged", loadVoices);
+    try {
+      const response = await fetch("/api/audio/sleep-guidance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          segments: prompts.map((prompt) => ({
+            id: prompt.id,
+            text: prompt.text,
+            durationSeconds: prompt.durationSeconds,
+          })),
+          voiceDirection,
+        }),
+      });
 
-    return () => synth.removeEventListener("voiceschanged", loadVoices);
-  }, [speechAvailable]);
+      const payload = await response.json().catch(() => null);
 
-  const getPreferredVoice = useCallback(() => {
-    if (!speechAvailable || typeof window === "undefined") {
-      return null;
+      if (!response.ok || !payload?.segments?.length) {
+        throw new Error(payload?.error || "tts_failed");
+      }
+
+      audioObjectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      audioObjectUrlsRef.current = [];
+
+      renderedAudioSegmentsRef.current = payload.segments.map(
+        (segment: { id: string; durationSeconds: number; audioBase64: string }) => {
+          const audioUrl = base64ToBlobUrl(segment.audioBase64, payload.mimeType || "audio/mpeg");
+          audioObjectUrlsRef.current.push(audioUrl);
+
+          return {
+            id: segment.id,
+            durationSeconds: segment.durationSeconds,
+            audioUrl,
+          };
+        },
+      );
+
+      setVoiceState("ready");
+    } catch {
+      renderedAudioSegmentsRef.current = [];
+      setVoiceState("error");
+      setVoiceError("Voice guidance could not load yet. You can still continue without audio.");
     }
+  }, []);
 
-    const voices = voicesRef.current.length > 0 ? voicesRef.current : window.speechSynthesis.getVoices();
-    const englishVoices = voices.filter((voice) => /^en(-|$)/i.test(voice.lang));
-
-    return (
-      englishVoices.find((voice) =>
-        /samantha|ava|allison|karen|moira|tessa|daniel|arthur|fred|siri|google us english|aria/i.test(
-          voice.name,
-        ),
-      ) ??
-      englishVoices.find((voice) => /en-us/i.test(voice.lang)) ??
-      englishVoices[0] ??
-      voices[0] ??
-      null
-    );
-  }, [speechAvailable]);
-
-  const unlockSpeech = useCallback(() => {
-    if (!speechAvailable || speechUnlockedRef.current || typeof window === "undefined") {
+  const playRenderedSegment = useCallback(async (index: number) => {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const synth = window.speechSynthesis;
-    const unlockUtterance = new SpeechSynthesisUtterance(" ");
-    const preferredVoice = getPreferredVoice();
+    const segment = renderedAudioSegmentsRef.current[index];
 
-    unlockUtterance.volume = 0;
-    unlockUtterance.rate = 1;
-    unlockUtterance.pitch = 1;
-    unlockUtterance.lang = preferredVoice?.lang || "en-US";
-
-    if (preferredVoice) {
-      unlockUtterance.voice = preferredVoice;
+    if (!segment) {
+      return;
     }
 
-    synth.cancel();
-    synth.speak(unlockUtterance);
-    synth.cancel();
-    synth.resume();
-    speechUnlockedRef.current = true;
-  }, [getPreferredVoice, speechAvailable]);
+    if (!audioElementRef.current) {
+      audioElementRef.current = new Audio();
+      audioElementRef.current.preload = "auto";
+    }
 
-  const speakPrompt = useCallback(
-    (prompt: string, voiceDirection?: DailyVoiceDirection) => {
-      if (!speechAvailable || typeof window === "undefined") {
-        return;
-      }
+    const audio = audioElementRef.current;
+    const shouldRestart = spokenPhaseRef.current !== index || audio.src !== segment.audioUrl;
 
-      const trimmedPrompt = prompt.trim();
+    if (shouldRestart) {
+      audio.pause();
+      audio.src = segment.audioUrl;
+      audio.currentTime = 0;
+      spokenPhaseRef.current = index;
+    }
 
-      if (!trimmedPrompt) {
-        return;
-      }
-
-      unlockSpeech();
-
-      const synth = window.speechSynthesis;
-      const preferredVoice = getPreferredVoice();
-
-      synth.cancel();
-      synth.resume();
-
-      const utterance = new SpeechSynthesisUtterance(trimmedPrompt);
-      const speechSettings = getSpeechSettings(voiceDirection);
-      let didStart = false;
-      utterance.lang = preferredVoice?.lang || "en-US";
-
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-
-      utterance.rate = speechSettings.rate;
-      utterance.pitch = speechSettings.pitch;
-      utterance.volume = speechSettings.volume;
-      utterance.onstart = () => {
-        didStart = true;
-        setSpeechError(null);
-
-        if (speechStartTimeoutRef.current !== null) {
-          window.clearTimeout(speechStartTimeoutRef.current);
-          speechStartTimeoutRef.current = null;
-        }
-      };
-      utterance.onerror = () => {
-        didStart = true;
-        setSpeechError("Voice guidance could not start on this device yet.");
-
-        if (speechStartTimeoutRef.current !== null) {
-          window.clearTimeout(speechStartTimeoutRef.current);
-          speechStartTimeoutRef.current = null;
-        }
-      };
-
-      synth.speak(utterance);
-      synth.resume();
-
-      if (speechStartTimeoutRef.current !== null) {
-        window.clearTimeout(speechStartTimeoutRef.current);
-      }
-
-      speechStartTimeoutRef.current = window.setTimeout(() => {
-        if (!didStart && !synth.speaking && !synth.pending) {
-          setSpeechError("Voice guidance did not start. Try tapping start again.");
-        }
-      }, 1200);
-    },
-    [getPreferredVoice, speechAvailable, unlockSpeech],
-  );
+    try {
+      await audio.play();
+      setVoiceError(null);
+    } catch {
+      setVoiceState("error");
+      setVoiceError("Voice guidance could not play on this device yet.");
+    }
+  }, []);
 
   const handleComplete = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
     }
 
     const record: PersistedSleepSessionState = {
@@ -746,15 +735,15 @@ export function SleepConfigPanel({
       const result = await recordSleepSessionCompletion({
         ...record,
         startedAt,
-        speechEnabled,
+        speechEnabled: voiceGuidanceEnabled && voiceState === "ready",
       });
 
       setSaveState(result.ok ? "saved" : "local-only");
     });
-  }, [dateKey, dateLabel, length, selectedExperience, speechEnabled, startedAt, startTransition]);
+  }, [dateKey, dateLabel, length, selectedExperience, startTransition, startedAt, voiceGuidanceEnabled, voiceState]);
 
   useEffect(() => {
-    if (view !== "active" || isPaused) {
+    if (view !== "active" || isPaused || voiceState === "loading") {
       return;
     }
 
@@ -771,60 +760,37 @@ export function SleepConfigPanel({
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [handleComplete, isPaused, view]);
+  }, [handleComplete, isPaused, view, voiceState]);
 
   useEffect(() => {
-    if (view !== "active" || !sessionContent.voiceEnabled) {
+    if (view !== "active" || !voiceGuidanceEnabled || voiceState !== "ready" || isPaused) {
       return;
     }
 
-    if (spokenPhaseRef.current === currentPromptIndex) {
-      return;
-    }
-
-    spokenPhaseRef.current = currentPromptIndex;
-    speakPrompt(currentPrompt, sessionContent.voiceDirection);
-  }, [currentPrompt, currentPromptIndex, sessionContent, speakPrompt, view]);
+    void playRenderedSegment(currentPromptIndex);
+  }, [currentPromptIndex, isPaused, playRenderedSegment, view, voiceGuidanceEnabled, voiceState]);
 
   useEffect(() => {
-    if (!sessionContent.voiceEnabled && typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      return;
-    }
-
-    if (sessionContent.voiceEnabled && view === "active") {
-      window.setTimeout(() => speakPrompt(currentPrompt, sessionContent.voiceDirection), 0);
-    }
-  }, [currentPrompt, sessionContent, speakPrompt, view]);
-
-  useEffect(() => {
-    return () => {
-      if (speechStartTimeoutRef.current !== null) {
-        window.clearTimeout(speechStartTimeoutRef.current);
+    if (view !== "active" || !voiceGuidanceEnabled) {
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
       }
+      return;
+    }
 
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
+    void requestRenderedAudio(sessionContent.prompts, sessionContent.voiceDirection);
+  }, [requestRenderedAudio, sessionContent.prompts, sessionContent.voiceDirection, view, voiceGuidanceEnabled]);
+
+  useEffect(() => clearRenderedAudio, [clearRenderedAudio]);
 
   function beginSession(nextExperienceKey: SleepExperienceKey, nextLength: string) {
     const nextExperience =
       experienceGroups.all.find((option) => option.value === nextExperienceKey) ?? recommendedExperience;
     const nextContent = buildSessionContent(nextExperience, Math.max(60, Number(nextLength) * 60));
-    setSpeechError(null);
 
-    if (nextContent.voiceEnabled && speechAvailable) {
-      spokenPhaseRef.current = 0;
-      speakPrompt(nextContent.prompts[0]?.text ?? "", nextContent.voiceDirection);
-    } else {
-      spokenPhaseRef.current = null;
-      if (typeof window !== "undefined" && "speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-      }
-    }
-
+    clearRenderedAudio();
+    setVoiceError(null);
+    setVoiceState(nextContent.voiceEnabled ? "loading" : "idle");
     setExperienceKey(nextExperienceKey);
     setStartedAt(new Date().toISOString());
     setSaveState("idle");
@@ -846,14 +812,11 @@ export function SleepConfigPanel({
 
     if (isPaused) {
       setIsPaused(false);
-      if (sessionContent.voiceEnabled) {
-        window.setTimeout(() => speakPrompt(currentPrompt, sessionContent.voiceDirection), 0);
-      }
       return;
     }
 
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
     }
 
     setIsPaused(true);
@@ -865,9 +828,11 @@ export function SleepConfigPanel({
         ? (lastSession.focus as SleepExperienceKey)
         : fallbackExperienceKey;
 
-    spokenPhaseRef.current = null;
+    clearRenderedAudio();
     setStartedAt(null);
     setSaveState("idle");
+    setVoiceState("idle");
+    setVoiceError(null);
     setView("config");
     setExperienceKey(fallbackKey);
     setLength(String(lastSession?.lengthMinutes ?? rememberedLength ?? defaultLength));
@@ -950,7 +915,13 @@ export function SleepConfigPanel({
             <h3 className="text-xl font-semibold text-stone-50">{sessionContent.title}</h3>
             <p className="text-sm text-stone-300">
               {sessionContent.kindLabel} · {length} minutes
-              {speechEnabled ? " · voice guidance on" : " · soundscape only"}
+              {voiceGuidanceEnabled
+                ? voiceState === "loading"
+                  ? " · preparing voice"
+                  : voiceState === "error"
+                    ? " · voice unavailable"
+                    : " · voice guidance on"
+                : " · soundscape only"}
             </p>
           </div>
 
@@ -976,7 +947,7 @@ export function SleepConfigPanel({
 
           <div className="rounded-2xl border border-stone-800 bg-stone-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
-              {speechEnabled ? "Current guidance" : "Current experience"}
+              {voiceGuidanceEnabled ? "Current guidance" : "Current experience"}
             </p>
             {currentPromptPurpose ? (
               <p className="mt-3 text-xs uppercase tracking-[0.18em] text-stone-500">{currentPromptPurpose}</p>
@@ -984,9 +955,15 @@ export function SleepConfigPanel({
             <p className="mt-3 text-base leading-7 text-stone-100 sm:text-lg sm:leading-8">{currentPrompt}</p>
           </div>
 
-          {speechError ? (
+          {voiceState === "loading" ? (
+            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">
+              Preparing tonight’s voice guidance...
+            </div>
+          ) : null}
+
+          {voiceError ? (
             <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
-              {speechError} Keep the page in the foreground and try starting the session again.
+              {voiceError} Keep the page in the foreground and try starting the session again.
             </div>
           ) : null}
 
@@ -994,9 +971,10 @@ export function SleepConfigPanel({
             <button
               type="button"
               onClick={handlePauseToggle}
-              className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500 sm:w-auto"
+              disabled={voiceState === "loading"}
+              className="w-full rounded-full border border-stone-700 px-4 py-3 text-sm font-medium text-stone-100 transition hover:border-stone-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              {isPaused ? "Resume" : "Pause"}
+              {voiceState === "loading" ? "Preparing..." : isPaused ? "Resume" : "Pause"}
             </button>
             <button
               type="button"
